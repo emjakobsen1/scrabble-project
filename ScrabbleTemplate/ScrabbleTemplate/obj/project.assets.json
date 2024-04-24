@@ -939,33 +939,33 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\emjak\\.nuget\\packages\\": {}
+    "/Users/mortennielsen/.nuget/packages/": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\emjak\\Desktop\\scrabble-project\\ScrabbleTemplate\\ScrabbleTemplate\\ScrabbleTemplate\\ScrabbleTemplate.fsproj",
+      "projectUniqueName": "/Users/mortennielsen/Projects/4thsemester/f#/scrabble/scrabble-project/ScrabbleTemplate/ScrabbleTemplate/ScrabbleTemplate.fsproj",
       "projectName": "ScrabbleTemplate",
-      "projectPath": "C:\\Users\\emjak\\Desktop\\scrabble-project\\ScrabbleTemplate\\ScrabbleTemplate\\ScrabbleTemplate\\ScrabbleTemplate.fsproj",
-      "packagesPath": "C:\\Users\\emjak\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\emjak\\Desktop\\scrabble-project\\ScrabbleTemplate\\ScrabbleTemplate\\ScrabbleTemplate\\obj\\",
+      "projectPath": "/Users/mortennielsen/Projects/4thsemester/f#/scrabble/scrabble-project/ScrabbleTemplate/ScrabbleTemplate/ScrabbleTemplate.fsproj",
+      "packagesPath": "/Users/mortennielsen/.nuget/packages/",
+      "outputPath": "/Users/mortennielsen/Projects/4thsemester/f#/scrabble/scrabble-project/ScrabbleTemplate/ScrabbleTemplate/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\emjak\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "/Users/mortennielsen/.nuget/NuGet/NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net7.0"
       ],
       "sources": {
-        "C:\\Program Files\\dotnet\\sdk\\7.0.100\\FSharp\\library-packs": {},
+        "/usr/local/share/dotnet/sdk/7.0.400/FSharp/library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net7.0": {
           "targetAlias": "net7.0",
           "projectReferences": {
-            "C:\\Users\\emjak\\Desktop\\scrabble-project\\ScrabbleTemplate\\ScrabbleTemplate\\ScrabbleBot\\ScrabbleBot.fsproj": {
-              "projectPath": "C:\\Users\\emjak\\Desktop\\scrabble-project\\ScrabbleTemplate\\ScrabbleTemplate\\ScrabbleBot\\ScrabbleBot.fsproj"
+            "/Users/mortennielsen/Projects/4thsemester/f#/scrabble/scrabble-project/ScrabbleTemplate/ScrabbleBot/ScrabbleBot.fsproj": {
+              "projectPath": "/Users/mortennielsen/Projects/4thsemester/f#/scrabble/scrabble-project/ScrabbleTemplate/ScrabbleBot/ScrabbleBot.fsproj"
             }
           }
         }
@@ -1008,7 +1008,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.100\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/7.0.400/RuntimeIdentifierGraph.json"
       }
     }
   }
