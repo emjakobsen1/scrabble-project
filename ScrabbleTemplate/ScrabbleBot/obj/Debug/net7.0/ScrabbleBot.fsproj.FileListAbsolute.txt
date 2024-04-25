@@ -24,3 +24,17 @@ C:/Users/emjak/Desktop/scrabble-project/ScrabbleTemplate/ScrabbleTemplate/Scrabb
 /Users/mortennielsen/Projects/4thsemester/f#/scrabble/scrabble-project/ScrabbleTemplate/ScrabbleBot/obj/Debug/net7.0/refint/ScrabbleBot.dll
 /Users/mortennielsen/Projects/4thsemester/f#/scrabble/scrabble-project/ScrabbleTemplate/ScrabbleBot/obj/Debug/net7.0/ScrabbleBot.pdb
 /Users/mortennielsen/Projects/4thsemester/f#/scrabble/scrabble-project/ScrabbleTemplate/ScrabbleBot/obj/Debug/net7.0/ref/ScrabbleBot.dll
+/Users/rasmusrasmussen/Desktop/funktionelt/scrabble-project/ScrabbleTemplate/ScrabbleBot/bin/Debug/net7.0/ScrabbleBot.deps.json
+/Users/rasmusrasmussen/Desktop/funktionelt/scrabble-project/ScrabbleTemplate/ScrabbleBot/bin/Debug/net7.0/ScrabbleBot.dll
+/Users/rasmusrasmussen/Desktop/funktionelt/scrabble-project/ScrabbleTemplate/ScrabbleBot/bin/Debug/net7.0/ScrabbleBot.pdb
+/Users/rasmusrasmussen/Desktop/funktionelt/scrabble-project/ScrabbleTemplate/ScrabbleBot/bin/Debug/net7.0/ScrabbleUtil.dll
+/Users/rasmusrasmussen/Desktop/funktionelt/scrabble-project/ScrabbleTemplate/ScrabbleBot/obj/Debug/net7.0/ScrabbleBot.fsproj.AssemblyReference.cache
+/Users/rasmusrasmussen/Desktop/funktionelt/scrabble-project/ScrabbleTemplate/ScrabbleBot/obj/Debug/net7.0/ScrabbleBot.AssemblyInfoInputs.cache
+/Users/rasmusrasmussen/Desktop/funktionelt/scrabble-project/ScrabbleTemplate/ScrabbleBot/obj/Debug/net7.0/ScrabbleBot.AssemblyInfo.fs
+/Users/rasmusrasmussen/Desktop/funktionelt/scrabble-project/ScrabbleTemplate/ScrabbleBot/obj/Debug/net7.0/ScrabbleBot.fsproj.CoreCompileInputs.cache
+/Users/rasmusrasmussen/Desktop/funktionelt/scrabble-project/ScrabbleTemplate/ScrabbleBot/obj/Debug/net7.0/ScrabbleBot.sourcelink.json
+/Users/rasmusrasmussen/Desktop/funktionelt/scrabble-project/ScrabbleTemplate/ScrabbleBot/obj/Debug/net7.0/Scrabble.3728C117.Up2Date
+/Users/rasmusrasmussen/Desktop/funktionelt/scrabble-project/ScrabbleTemplate/ScrabbleBot/obj/Debug/net7.0/ScrabbleBot.dll
+/Users/rasmusrasmussen/Desktop/funktionelt/scrabble-project/ScrabbleTemplate/ScrabbleBot/obj/Debug/net7.0/refint/ScrabbleBot.dll
+/Users/rasmusrasmussen/Desktop/funktionelt/scrabble-project/ScrabbleTemplate/ScrabbleBot/obj/Debug/net7.0/ScrabbleBot.pdb
+/Users/rasmusrasmussen/Desktop/funktionelt/scrabble-project/ScrabbleTemplate/ScrabbleBot/obj/Debug/net7.0/ref/ScrabbleBot.dll
