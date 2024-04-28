@@ -58,6 +58,16 @@ module State =
     let playerNumber st  = st.playerNumber
     let hand st          = st.hand
     let occupiedSquares st  = st.occupiedSquares
+    
+
+    //let removeOldTiles ms st =
+        
+        // let removeTile (x, y) st =
+        //     let tile = Map.find (x, y) (occupiedSquares st)
+        //     let id = fst tile
+        //     let hand = MultiSet.remove id (hand st)
+        //     {st with hand = hand}
+        // List.fold (fun acc x -> removeTile x acc) st ms
 
 module Scrabble =
     open System.Threading
@@ -71,12 +81,16 @@ module Scrabble =
             forcePrint "Input move (format '(<x-coordinate> <y-coordinate> <piece id><character><point-value> )*', note the absence of space between the last inputs)\n\n"
             let input =  System.Console.ReadLine()
             let move = RegEx.parseMove input
+           
 
-            debugPrint (sprintf "Player %d -> Server:\n%A\n" (State.playerNumber st) move) // keep the debug lines. They are useful.
-            send cstream (SMPlay move)
+
+            // debugPrint (sprintf "Player %d -> Server:\n%A\n" (State.playerNumber st) move) // keep the debug lines. They are useful.
+            // send cstream (SMPlay move)
+            send cstream (SMPass)
+        
 
             let msg = recv cstream
-            debugPrint (sprintf "Player %d <- Server:\n%A\n" (State.playerNumber st) move) // keep the debug lines. They are useful.
+            // debugPrint (sprintf "Player %d <- Server:\n%A\n" (State.playerNumber st) move) // keep the debug lines. They are useful.
 
             match msg with
             | RCM (CMPlaySuccess(ms, points, newPieces)) ->
@@ -95,7 +109,7 @@ module Scrabble =
             | RCM (CMGameOver _) -> ()
             | RCM a -> failwith (sprintf "not implmented: %A" a)
             | RGPE err -> printfn "Gameplay Error:\n%A" err; aux st
-
+ 
 
         aux st
 
