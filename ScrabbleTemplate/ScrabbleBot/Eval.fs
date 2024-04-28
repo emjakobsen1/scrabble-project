@@ -193,7 +193,15 @@
 
     type boardFun = coord -> Result<squareFun option, Error> 
 
-    let stmntToBoardFun stm m = failwith "Not implemented"
+    let stmntToBoardFun (stmnt: stmnt) (t: Map<int, 'a>) ((x,y):coord): Result<'a option, Error> =
+        let state = mkState [("x", x); ("y", y); ("result", 0)] [] ["x"; "y";"result"]
+        stmntEval2 stmnt >>>=
+        lookup "result" >>= (fun x ->
+            match t.TryFind x with //try to find the integer gotten from looking up result in the map
+            |Some x -> ret (Some x) 
+            |None -> ret None)
+         |>
+        evalSM state
 
     type board = {
         center        : coord
