@@ -1,5 +1,6 @@
 ﻿// Learn more about F# at http://fsharp.org
 
+
 let time f =
     let start = System.DateTime.Now
     let res = f ()
@@ -15,6 +16,61 @@ let spawnMultiples name dict bot =
         | x -> (sprintf "%s%d" name x, dict, bot)::aux (x - 1)
    
     aux >> List.rev
+
+module TrieDictionary =
+    open ScrabbleUtil
+    open ScrabbleUtil.Dictionary
+
+    type Dict =
+        | Leaf of bool //(* empty csDict)
+        | Node of bool * System.Collections.Generic.Dictionary<char, Dict> 
+
+    type characterToDictionary = System.Collections.Generic.Dictionary<char, Dict> 
+
+    let empty () = Leaf false
+
+    let rec insert (word: string) (trie: Dict) =
+        match trie with
+        | Leaf _ when word.Length = 0 -> Leaf true
+        | Node (_, characterToDictionary) when word.Length = 0 -> Node(true, characterToDictionary)
+        | Leaf b ->
+            let tmp = characterToDictionary ()
+            tmp.[word.[0]] <- insert word.[1..] (empty ())
+            Node(b, tmp)
+        | Node (b, nextTrie) ->
+            match nextTrie.TryGetValue word.[0] with
+            | (true, nextnextTrie) ->
+                nextTrie.[word.[0]] <- insert word.[1..] nextnextTrie
+                Node(b, nextTrie)
+            | (false, _)    ->
+                nextTrie.[word.[0]] <- insert word.[1..] (empty())
+                Node(b, nextTrie)
+    
+
+    let rec lookup (word: string) (trie: Dict) =
+        match trie with
+        | Leaf b when word.Length = 0 -> b
+        | Leaf _ -> false
+        | Node (b, _) when word.Length = 0 -> b
+        | Node (b, nextTrie) ->
+            match nextTrie.TryGetValue word.[0] with
+            | (true, nextnextTrie) -> lookup word.[1..] nextnextTrie
+            | (false, _) -> false
+
+    let step (c: char) (trie: Dict) =
+        match trie with
+        | Node (_, nextTrie) ->
+            match nextTrie.TryGetValue c with
+            | (true, nextnextTrie) -> 
+                match nextnextTrie with
+                | Leaf b ->
+                    Some (b, nextnextTrie)
+                | Node (b, _) ->
+                    Some (b, nextnextTrie)
+            | (false, _) ->
+                None
+        | Leaf _ -> None
+    
 
 [<EntryPoint>]
 let main argv =
@@ -45,8 +101,8 @@ let main argv =
 
     let dictAPI =
         // Uncomment if you have implemented a dictionary. last element None if you have not implemented a GADDAG
-        // Some (Dictionary.empty, Dictionary.insert, Dictionary.step, Some Dictionary.reverse) 
-        None
+        Some (TrieDictionary.empty, TrieDictionary.insert, TrieDictionary.step, None) 
+        //None
         
     // Uncomment this line to call your client
     

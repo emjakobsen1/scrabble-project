@@ -77,6 +77,10 @@
 /Users/rasmusrasmussen/Desktop/funktionelt/scrabble-project/ScrabbleTemplate/ScrabbleTemplate/obj/Debug/net7.0/ScrabbleTemplate.pdb
 /Users/rasmusrasmussen/Desktop/funktionelt/scrabble-project/ScrabbleTemplate/ScrabbleTemplate/obj/Debug/net7.0/ScrabbleTemplate.genruntimeconfig.cache
 /Users/rasmusrasmussen/Desktop/funktionelt/scrabble-project/ScrabbleTemplate/ScrabbleTemplate/obj/Debug/net7.0/ref/ScrabbleTemplate.dll
+C:\Users\emjak\Desktop\scrabble-project\ScrabbleTemplate\ScrabbleTemplate\ScrabbleTemplate\obj\Debug\net7.0\ScrabbleTemplate.fsproj.AssemblyReference.cache
+C:\Users\emjak\Desktop\scrabble-project\ScrabbleTemplate\ScrabbleTemplate\ScrabbleTemplate\obj\Debug\net7.0\ScrabbleTemplate.AssemblyInfoInputs.cache
+C:\Users\emjak\Desktop\scrabble-project\ScrabbleTemplate\ScrabbleTemplate\ScrabbleTemplate\obj\Debug\net7.0\ScrabbleTemplate.AssemblyInfo.fs
+C:\Users\emjak\Desktop\scrabble-project\ScrabbleTemplate\ScrabbleTemplate\ScrabbleTemplate\obj\Debug\net7.0\ScrabbleTemplate.fsproj.CoreCompileInputs.cache
 C:\Users\emjak\Desktop\scrabble-project\ScrabbleTemplate\ScrabbleTemplate\ScrabbleTemplate\bin\Debug\net7.0\ScrabbleTemplate.exe
 C:\Users\emjak\Desktop\scrabble-project\ScrabbleTemplate\ScrabbleTemplate\ScrabbleTemplate\bin\Debug\net7.0\ScrabbleTemplate.deps.json
 C:\Users\emjak\Desktop\scrabble-project\ScrabbleTemplate\ScrabbleTemplate\ScrabbleTemplate\bin\Debug\net7.0\ScrabbleTemplate.runtimeconfig.json
@@ -106,10 +110,6 @@ C:\Users\emjak\Desktop\scrabble-project\ScrabbleTemplate\ScrabbleTemplate\Scrabb
 C:\Users\emjak\Desktop\scrabble-project\ScrabbleTemplate\ScrabbleTemplate\ScrabbleTemplate\bin\Debug\net7.0\ScrabbleServer.dll
 C:\Users\emjak\Desktop\scrabble-project\ScrabbleTemplate\ScrabbleTemplate\ScrabbleTemplate\bin\Debug\net7.0\ScrabbleUtil.dll
 C:\Users\emjak\Desktop\scrabble-project\ScrabbleTemplate\ScrabbleTemplate\ScrabbleTemplate\bin\Debug\net7.0\ScrabbleBot.pdb
-C:\Users\emjak\Desktop\scrabble-project\ScrabbleTemplate\ScrabbleTemplate\ScrabbleTemplate\obj\Debug\net7.0\ScrabbleTemplate.fsproj.AssemblyReference.cache
-C:\Users\emjak\Desktop\scrabble-project\ScrabbleTemplate\ScrabbleTemplate\ScrabbleTemplate\obj\Debug\net7.0\ScrabbleTemplate.AssemblyInfoInputs.cache
-C:\Users\emjak\Desktop\scrabble-project\ScrabbleTemplate\ScrabbleTemplate\ScrabbleTemplate\obj\Debug\net7.0\ScrabbleTemplate.AssemblyInfo.fs
-C:\Users\emjak\Desktop\scrabble-project\ScrabbleTemplate\ScrabbleTemplate\ScrabbleTemplate\obj\Debug\net7.0\ScrabbleTemplate.fsproj.CoreCompileInputs.cache
 C:\Users\emjak\Desktop\scrabble-project\ScrabbleTemplate\ScrabbleTemplate\ScrabbleTemplate\obj\Debug\net7.0\ScrabbleTemplate.fsproj.CopyComplete
 C:\Users\emjak\Desktop\scrabble-project\ScrabbleTemplate\ScrabbleTemplate\ScrabbleTemplate\obj\Debug\net7.0\ScrabbleTemplate.dll
 C:\Users\emjak\Desktop\scrabble-project\ScrabbleTemplate\ScrabbleTemplate\ScrabbleTemplate\obj\Debug\net7.0\refint\ScrabbleTemplate.dll
