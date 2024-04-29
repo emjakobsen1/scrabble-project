@@ -138,20 +138,23 @@
     
 
 (* These five types will move out of this file once you start working on the project *)
+    //Coordinate e.g. (0, 2)
     type coord      = int * int
+    // Key is the priority, relevant for calculating points. Value is the square program which is then evaluated.
     type squareProg = Map<int, string>
-
-    type squareFun = word -> int -> int -> Result<int, Error>
-
+    //A word is a list of characters with associated point values.
     type word   = (char * int) list
+    type squareFun = word -> int -> int -> Result<int, Error>
+    
+    
     type square = Map<int, squareFun>
-    let parseSquareProg (sqp:Map<int,string>) = sqp |> Map.map (fun _ p -> (stmntToSquareFun (getSuccess (run stmntParse p))))
+    let parseSquareProgram (squareProgram:Map<int,string>) = squareProgram |> Map.map (fun _ p -> (stmntToSquareFun (getSuccess (run stmntParse p))))
    
     type boardFun2 = coord -> StateMonad.Result<square option, StateMonad.Error>
     
-    let parseBoardProg (s:string) (sqs:Map<int, square>) : boardFun2 =
+    let parseBoardProgram (s:string) (squares:Map<int, square>) : boardFun2 =
         //printf "Inside parseboardProg: %A \n" sqs
-        stmntToBoardFun (getSuccess (run stmntParse s)) sqs
+        stmntToBoardFun (getSuccess (run stmntParse s)) squares
 
     type board = {
         center        : coord
@@ -160,10 +163,10 @@
     }
     let mkBoard (bp : boardProg) =
             let squaresMap = bp.squares
-            let squares = Map.map (fun _ squareProg -> parseSquareProg squareProg) squaresMap
+            let squares = Map.map (fun _ squareProg -> parseSquareProgram squareProg) squaresMap
             let defaultSquare = Map.find bp.usedSquare squaresMap
             {
                 center = bp.center
-                defaultSquare = parseSquareProg defaultSquare
-                squares = parseBoardProg bp.prog squares
+                defaultSquare = parseSquareProgram defaultSquare
+                squares = parseBoardProgram bp.prog squares
             }

@@ -133,7 +133,6 @@
         | C c -> ret c
         | CV a -> arithEval a >>= characterValue
         | ToUpper c -> charEval c >>= toUpper
-        | ToUpper a -> charEval a >>= fun c -> ret (System.Char.ToUpper c)
         | ToLower a -> charEval a >>= fun c -> ret (System.Char.ToLower c)
         | IntToChar a -> arithEval a >>= fun x -> ret (char x)
        

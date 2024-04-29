@@ -3,6 +3,7 @@
 open ScrabbleUtil
 open ScrabbleUtil.ServerCommunication
 open MultiSet
+open ScrabbleUtil.Dictionary
 
 open System.IO
 
@@ -35,6 +36,7 @@ module RegEx =
     let printHand pieces hand =
         hand |>
         MultiSet.fold (fun _ x i -> forcePrint (sprintf "%d -> (%A, %d)\n" x (Map.find x pieces) i)) ()
+    
 
 module State = 
     // Make sure to keep your state localised in this module. It makes your life a whole lot easier.
@@ -47,7 +49,7 @@ module State =
         dict          : ScrabbleUtil.Dictionary.Dict
         playerNumber  : uint32
         hand          : MultiSet.MultiSet<uint32>
-        occupiedSquares : Map<coord, (uint32 * (char*int))> //mapping a coordinate to a tuple of (id * tile)
+        occupiedSquares : Map<coord, (uint32 * (char*int))> 
     }
 
     let mkState b d pn h = {board = b; dict = d;  playerNumber = pn; hand = h; 
@@ -59,7 +61,16 @@ module State =
     let hand st          = st.hand
     let occupiedSquares st  = st.occupiedSquares
     
+    let updateStateOnCMPlayed (incomingMoves: list<coord * (uint32 * (char * int))>) (oldState: state) =
+        let rec processMoves moves state =
+            match moves with
+            | [] -> state
+            | (coord, (id, (char, point))) :: rest ->
+            let updatedOccupiedSquares = Map.add coord (id, (char, point)) state.occupiedSquares
+            processMoves rest { state with occupiedSquares = updatedOccupiedSquares }
 
+        processMoves incomingMoves oldState
+    
     //let removeOldTiles ms st =
         
         // let removeTile (x, y) st =
@@ -76,18 +87,19 @@ module Scrabble =
 
         let rec aux (st : State.state) =
             Print.printHand pieces (State.hand st)
-
+        
             // remove the force print when you move on from manual input (or when you have learnt the format)
             forcePrint "Input move (format '(<x-coordinate> <y-coordinate> <piece id><character><point-value> )*', note the absence of space between the last inputs)\n\n"
             let input =  System.Console.ReadLine()
             let move = RegEx.parseMove input
-           
 
+            // printfn "VORES EGEN STATE PLAYER NUMBER %d" st.playerNumber
+            // printfn "VORES EGEN STATE CENTER BOARD  (%A)" st.board.center
 
             // debugPrint (sprintf "Player %d -> Server:\n%A\n" (State.playerNumber st) move) // keep the debug lines. They are useful.
-            // send cstream (SMPlay move)
-            send cstream (SMPass)
-        
+            send cstream (SMPlay move)
+            //send cstream (SMPass)
+            
 
             let msg = recv cstream
             // debugPrint (sprintf "Player %d <- Server:\n%A\n" (State.playerNumber st) move) // keep the debug lines. They are useful.
@@ -100,13 +112,20 @@ module Scrabble =
                 aux st'
             | RCM (CMPlayed (pid, ms, points)) ->
                 (* Successful play by other player. Update your state *)
-                let st' = st // This state needs to be updated
+                let st' = State.updateStateOnCMPlayed ms st
+                // just printing the values keys, and length of the occupiedSquares
+                //st'.occupiedSquares |> Map.iter (fun key value -> printfn "occupiedSquares= total: %d  and key/values: %A , %A" (Map.count st'.occupiedSquares) key value)
                 aux st'
+                // let st' = st // This state needs to be updated
+                // aux st'
             | RCM (CMPlayFailed (pid, ms)) ->
                 (* Failed play. Update your state *)
                 let st' = st // This state needs to be updated
                 aux st'
             | RCM (CMGameOver _) -> ()
+            | RCM (CMPassed (_)) -> 
+                let st' = st
+                aux st'
             | RCM a -> failwith (sprintf "not implmented: %A" a)
             | RGPE err -> printfn "Gameplay Error:\n%A" err; aux st
  
