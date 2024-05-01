@@ -88,6 +88,15 @@ module State =
                 let updatedHand = MultiSet.removeSingle id st.hand
                 removeOldTiles rest {st with hand = updatedHand}
         removeOldTiles ms st
+    
+    let addNewTiles (newPieces : (uint32 * uint32) list) (st : state) =
+        let rec addNewTiles (newPieces : (uint32 * uint32) list) (st : state) =
+            match newPieces with
+            | [] -> st
+            | (id, amount) :: rest -> 
+                let updatedHand = MultiSet.add id amount st.hand
+                addNewTiles rest {st with hand = updatedHand}
+        addNewTiles newPieces st
 
             
 module Scrabble =
@@ -107,8 +116,6 @@ module Scrabble =
                 let move = RegEx.parseMove input
                 send cstream (SMPlay move)
                 
-
-
             let msg = recv cstream
 
             // debugPrint (sprintf "Player %d -> Server:\n%A\n" (State.playerNumber st) move) // keep the debug lines. They are useful.
@@ -123,35 +130,30 @@ module Scrabble =
             match msg with
             | RCM (CMPlaySuccess(ms, points, newPieces)) ->
                 (* Successful play by you. Update your state (remove old tiles, add the new ones, change turn, etc) *)
-                
-
-                let st' = State.updateStateOnCMPlayed ms st 
-                let removeOldTiles =  State.removeOldTiles ms st' 
-
-                aux removeOldTiles
+                let st' = State.updateStateOnCMPlayed ms st |> State.removeOldTiles ms |> State.addNewTiles newPieces
+                aux st'
 
             | RCM (CMPlayed (pid, ms, points)) ->
                 (* Successful play by other player. Update your state *)
                 let st' = State.updateStateOnCMPlayed ms st |> State.updatePlayerTurn 
-
-                // just printing the values keys, and length of the occupiedSquares
-                //st'.occupiedSquares |> Map.iter (fun key value -> printfn "occupiedSquares= total: %d  and key/values: %A , %A" (Map.count st'.occupiedSquares) key value)
                 aux st'
+
             | RCM (CMPlayFailed (pid, ms)) ->
                 (* Failed play. Update your state *)
-                let st' = State.updatePlayerTurn st // This state needs to be updated
+                let st' = State.updatePlayerTurn st 
 
                 aux st'
             | RCM (CMGameOver _) -> ()
+
             | RCM (CMPassed (_)) -> 
                 let st' = st
                 aux st'
+
             | RCM a -> failwith (sprintf "not implmented: %A" a)
             | RGPE err -> 
                 printfn "Gameplay Error:\n%A" err;
                 let st' = State.updatePlayerTurn st
                 aux st'
- 
         aux st
 
     let startGame 
