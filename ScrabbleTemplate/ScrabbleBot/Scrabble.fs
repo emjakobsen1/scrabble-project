@@ -80,24 +80,16 @@ module State =
         if st.playerTurn = 1u then {st with playerTurn = 2u}
         else {st with playerTurn = 1u}
 
-    let RemoveOldTiles (ms : list<coord * (uint32 * (char * int))>) (st : state) =
+    let removeOldTiles (ms : list<coord * (uint32 * (char * int))>) (st : state) =
         let rec removeOldTiles (ms : list<coord * (uint32 * (char * int))>) (st : state) =
             match ms with
             | [] -> st
-            | (coord, (id, (char, point))) :: rest ->
-                let hand = MultiSet.remove id 1u st.hand
-                let updatedOccupiedSquares = Map.add coord (id, (char, point)) st.occupiedSquares
-                removeOldTiles rest { st with hand = hand; occupiedSquares = updatedOccupiedSquares }
+            | (coord, (id, (char, point))) :: rest -> 
+                let updatedHand = MultiSet.removeSingle id st.hand
+                removeOldTiles rest {st with hand = updatedHand}
         removeOldTiles ms st
-    
-    let AddNewTiles (ms : list<coord * (uint32 * (char * int))>) (st : state) =
-        let rec addNewTiles (ms : list<coord * (uint32 * (char * int))>) (st : state) =
-            match ms with
-            | [] -> st
-            | (coord, (id, (char, point))) :: rest ->
-                let hand = MultiSet.add id 1u st.hand
-        addNewTiles ms st
-        
+
+            
 module Scrabble =
     open System.Threading
 
@@ -107,13 +99,14 @@ module Scrabble =
             //check if it is the player's turn
             let isYourTurn = (State.playerTurn st) = (State.playerNumber st)
             forcePrint (sprintf "Is it your turn? %b\n" isYourTurn)
-
+            Print.printHand pieces (State.hand st)
             // remove the force print when you move on from manual input (or when you have learnt the format)
             //forcePrint "Input move (format '(<x-coordinate> <y-coordinate> <piece id><character><point-value> )*', note the absence of space between the last inputs)\n\n"
             if isYourTurn then 
                 let input =  System.Console.ReadLine()
                 let move = RegEx.parseMove input
                 send cstream (SMPlay move)
+                
 
 
             let msg = recv cstream
@@ -132,8 +125,11 @@ module Scrabble =
                 (* Successful play by you. Update your state (remove old tiles, add the new ones, change turn, etc) *)
                 
 
-                let st' = State.RemoveOldTiles ms st
-                aux st'
+                let st' = State.updateStateOnCMPlayed ms st 
+                let removeOldTiles =  State.removeOldTiles ms st' 
+
+                aux removeOldTiles
+
             | RCM (CMPlayed (pid, ms, points)) ->
                 (* Successful play by other player. Update your state *)
                 let st' = State.updateStateOnCMPlayed ms st |> State.updatePlayerTurn 
