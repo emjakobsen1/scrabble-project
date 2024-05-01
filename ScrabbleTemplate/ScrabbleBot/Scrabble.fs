@@ -88,6 +88,15 @@ module State =
                 let updatedHand = MultiSet.removeSingle id st.hand
                 removeOldTiles rest {st with hand = updatedHand}
         removeOldTiles ms st
+
+    let removeTilesFromHand (tiles : (uint32 * uint32) list) (st : state) =
+        let rec removeTilesFromHand (tiles : (uint32 * uint32) list) (st : state) =
+            match tiles with
+            | [] -> st
+            | (id, amount) :: rest -> 
+                let updatedHand = MultiSet.remove id amount st.hand
+                removeTilesFromHand rest {st with hand = updatedHand}
+        removeTilesFromHand tiles st
     
     let addNewTiles (newPieces : (uint32 * uint32) list) (st : state) =
         let rec addNewTiles (newPieces : (uint32 * uint32) list) (st : state) =
@@ -108,15 +117,19 @@ module Scrabble =
             //check if it is the player's turn
             let isYourTurn = (State.playerTurn st) = (State.playerNumber st)
             forcePrint (sprintf "Is it your turn? %b\n" isYourTurn)
-            Print.printHand pieces (State.hand st)
+            Print.printHand pieces (st.hand)
             // remove the force print when you move on from manual input (or when you have learnt the format)
             //forcePrint "Input move (format '(<x-coordinate> <y-coordinate> <piece id><character><point-value> )*', note the absence of space between the last inputs)\n\n"
             if isYourTurn then 
-                let input =  System.Console.ReadLine()
-                let move = RegEx.parseMove input
-                send cstream (SMPlay move)
-                
+                // let input =  System.Console.ReadLine()
+                // let move = RegEx.parseMove input
+                // send cstream (SMPlay move)
+
+                send cstream (SMChange (toList st.hand))
+
+                //send cstream (SMPass)
             let msg = recv cstream
+
 
             // debugPrint (sprintf "Player %d -> Server:\n%A\n" (State.playerNumber st) move) // keep the debug lines. They are useful.
            
@@ -130,8 +143,15 @@ module Scrabble =
             match msg with
             | RCM (CMPlaySuccess(ms, points, newPieces)) ->
                 (* Successful play by you. Update your state (remove old tiles, add the new ones, change turn, etc) *)
-                let st' = State.updateStateOnCMPlayed ms st |> State.removeOldTiles ms |> State.addNewTiles newPieces
+                let st' = State.updateStateOnCMPlayed ms st |> State.removeOldTiles ms |> State.addNewTiles newPieces |> State.updatePlayerTurn
                 aux st'
+            
+            | RCM (CMChangeSuccess(newTiles)) ->
+                (* Successful change by you. Update your state (remove old tiles, add the new ones, change turn, etc) *)
+                (*Works when changing all tiles from hand*)
+                let st' = State.removeTilesFromHand newTiles st |> State.addNewTiles newTiles |> State.updatePlayerTurn
+                aux st'
+                
 
             | RCM (CMPlayed (pid, ms, points)) ->
                 (* Successful play by other player. Update your state *)
@@ -150,6 +170,7 @@ module Scrabble =
                 aux st'
 
             | RCM a -> failwith (sprintf "not implmented: %A" a)
+            
             | RGPE err -> 
                 printfn "Gameplay Error:\n%A" err;
                 let st' = State.updatePlayerTurn st
