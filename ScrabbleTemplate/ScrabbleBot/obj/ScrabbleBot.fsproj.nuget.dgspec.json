@@ -1,26 +1,26 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\emjak\\Desktop\\scrabble-project\\ScrabbleTemplate\\ScrabbleTemplate\\ScrabbleBot\\ScrabbleBot.fsproj": {}
+    "/Users/rasmusrasmussen/itu/functionel/scrabble-project/ScrabbleTemplate/ScrabbleBot/ScrabbleBot.fsproj": {}
   },
   "projects": {
-    "C:\\Users\\emjak\\Desktop\\scrabble-project\\ScrabbleTemplate\\ScrabbleTemplate\\ScrabbleBot\\ScrabbleBot.fsproj": {
+    "/Users/rasmusrasmussen/itu/functionel/scrabble-project/ScrabbleTemplate/ScrabbleBot/ScrabbleBot.fsproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\emjak\\Desktop\\scrabble-project\\ScrabbleTemplate\\ScrabbleTemplate\\ScrabbleBot\\ScrabbleBot.fsproj",
+        "projectUniqueName": "/Users/rasmusrasmussen/itu/functionel/scrabble-project/ScrabbleTemplate/ScrabbleBot/ScrabbleBot.fsproj",
         "projectName": "ScrabbleBot",
-        "projectPath": "C:\\Users\\emjak\\Desktop\\scrabble-project\\ScrabbleTemplate\\ScrabbleTemplate\\ScrabbleBot\\ScrabbleBot.fsproj",
-        "packagesPath": "C:\\Users\\emjak\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\emjak\\Desktop\\scrabble-project\\ScrabbleTemplate\\ScrabbleTemplate\\ScrabbleBot\\obj\\",
+        "projectPath": "/Users/rasmusrasmussen/itu/functionel/scrabble-project/ScrabbleTemplate/ScrabbleBot/ScrabbleBot.fsproj",
+        "packagesPath": "/Users/rasmusrasmussen/.nuget/packages/",
+        "outputPath": "/Users/rasmusrasmussen/itu/functionel/scrabble-project/ScrabbleTemplate/ScrabbleBot/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\emjak\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "/Users/rasmusrasmussen/.nuget/NuGet/NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net7.0"
         ],
         "sources": {
-          "C:\\Program Files\\dotnet\\sdk\\7.0.100\\FSharp\\library-packs": {},
+          "/usr/local/share/dotnet/sdk/8.0.204/FSharp/library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -28,6 +28,11 @@
             "targetAlias": "net7.0",
             "projectReferences": {}
           }
+        },
+        "restoreAuditProperties": {
+          "enableAudit": "true",
+          "auditLevel": "low",
+          "auditMode": "direct"
         }
       },
       "frameworks": {
@@ -62,7 +67,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.100\\RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "/usr/local/share/dotnet/sdk/8.0.204/RuntimeIdentifierGraph.json"
         }
       }
     }
