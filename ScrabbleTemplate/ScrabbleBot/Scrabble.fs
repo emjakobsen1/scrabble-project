@@ -79,6 +79,24 @@ module State =
     let updatePlayerTurn (st : state) =
         if st.playerTurn = 1u then {st with playerTurn = 2u}
         else {st with playerTurn = 1u}
+
+    let RemoveOldTiles (ms : list<coord * (uint32 * (char * int))>) (st : state) =
+        let rec removeOldTiles (ms : list<coord * (uint32 * (char * int))>) (st : state) =
+            match ms with
+            | [] -> st
+            | (coord, (id, (char, point))) :: rest ->
+                let hand = MultiSet.remove id 1u st.hand
+                let updatedOccupiedSquares = Map.add coord (id, (char, point)) st.occupiedSquares
+                removeOldTiles rest { st with hand = hand; occupiedSquares = updatedOccupiedSquares }
+        removeOldTiles ms st
+    
+    let AddNewTiles (ms : list<coord * (uint32 * (char * int))>) (st : state) =
+        let rec addNewTiles (ms : list<coord * (uint32 * (char * int))>) (st : state) =
+            match ms with
+            | [] -> st
+            | (coord, (id, (char, point))) :: rest ->
+                let hand = MultiSet.add id 1u st.hand
+        addNewTiles ms st
         
 module Scrabble =
     open System.Threading
@@ -113,7 +131,8 @@ module Scrabble =
             | RCM (CMPlaySuccess(ms, points, newPieces)) ->
                 (* Successful play by you. Update your state (remove old tiles, add the new ones, change turn, etc) *)
                 
-                let st' = st //RemoveOldTiles ms st |> addNewPieces newPieces st |> updateBoard ms st // This state needs to be updated
+
+                let st' = State.RemoveOldTiles ms st
                 aux st'
             | RCM (CMPlayed (pid, ms, points)) ->
                 (* Successful play by other player. Update your state *)
