@@ -32,7 +32,7 @@ module internal MultiSet
     let foldBack (f : 'a -> uint32 -> 'b -> 'b) (R(s) : MultiSet<'a>) (acc : 'b) = Map.foldBack f s acc
     
     let ofList (_ : 'a list) : MultiSet<'a> =  failwith "not implemented yet"
-    let toList (_ : MultiSet<'a>) : 'a list =  failwith "not implemented yet"
+    let toList (R r) = foldBack (fun x y acc -> List.init (int y) (fun t -> x) @ acc) (R  r) []
 
 
     let map (_ : 'a -> 'b) (_ : MultiSet<'a>) : MultiSet<'b> =  failwith "not implemented yet"
