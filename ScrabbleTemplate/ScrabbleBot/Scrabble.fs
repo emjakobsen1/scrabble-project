@@ -31,7 +31,7 @@ module RegEx =
                 | _ -> failwith "Failed (should never happen)") |>
         Seq.toList
 
- module Print =
+module Print =
 
     let printHand pieces hand =
         hand |>
@@ -102,7 +102,20 @@ module State =
                 addNewTiles rest {st with hand = updatedHand}
         addNewTiles newPieces st
 
-            
+module Move =
+    open Parser
+    //let findFirstMove(hand : MultiSet.MultiSet<uint32>) (dict : ScrabbleUtil.Dictionary.Dict) =
+        
+    let intToChar (pieces : Map<uint32, 'a>) (id : uint32) = 
+       match  Map.find id pieces with 
+       | (id, set) -> match set with 
+                        | (c, p) -> c
+
+
+    let handFromIntToChar (pieces : Map<uint32, 'a>) (hand : MultiSet.MultiSet<uint32>) =
+        toList hand |> List.map (fun x -> (x, intToChar pieces x))
+
+     
 module Scrabble =
     open System.Threading
 
@@ -115,14 +128,19 @@ module Scrabble =
             Print.printHand pieces (st.hand)
             // remove the force print when you move on from manual input (or when you have learnt the format)
             //forcePrint "Input move (format '(<x-coordinate> <y-coordinate> <piece id><character><point-value> )*', note the absence of space between the last inputs)\n\n"
+            
             if isYourTurn then 
-                // let input =  System.Console.ReadLine()
-                // let move = RegEx.parseMove input
-                // send cstream (SMPlay move)
-
+               //checks if you are first to make the move
+                let handToChar = Move.handFromIntToChar pieces st.hand 
+                debugPrint (sprintf "Hand to char: %A\n" handToChar)
+               
                 send cstream (SMChange (toList st.hand))
 
                 //send cstream (SMPass)
+                 // let input =  System.Console.ReadLine()
+                // let move = RegEx.parseMove input
+                // send cstream (SMPlay move)
+                
             
             //check if dictionary works 
             let isWordInDictionary = lookup "ORANGE" st.dict
