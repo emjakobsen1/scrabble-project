@@ -89,15 +89,10 @@ module State =
                 removeOldTiles rest {st with hand = updatedHand}
         removeOldTiles ms st
 
-    let removeTilesFromHand (tiles : (uint32 * uint32) list) (st : state) =
-        let rec removeTilesFromHand (tiles : (uint32 * uint32) list) (st : state) =
-            match tiles with
-            | [] -> st
-            | (id, amount) :: rest -> 
-                let updatedHand = MultiSet.remove id amount st.hand
-                removeTilesFromHand rest {st with hand = updatedHand}
-        removeTilesFromHand tiles st
-    
+    let emptyYourHand (hand : MultiSet.MultiSet<uint32>) (st : state) =
+        let updatedHand = MultiSet.empty
+        {st with hand = updatedHand} 
+
     let addNewTiles (newPieces : (uint32 * uint32) list) (st : state) =
         let rec addNewTiles (newPieces : (uint32 * uint32) list) (st : state) =
             match newPieces with
@@ -128,6 +123,11 @@ module Scrabble =
                 send cstream (SMChange (toList st.hand))
 
                 //send cstream (SMPass)
+            
+            //check if dictionary works 
+            let isWordInDictionary = lookup "ORANGE" st.dict
+            forcePrint (sprintf "Is orange in dict ? %b\n" isWordInDictionary )
+
             let msg = recv cstream
 
 
@@ -149,7 +149,7 @@ module Scrabble =
             | RCM (CMChangeSuccess(newTiles)) ->
                 (* Successful change by you. Update your state (remove old tiles, add the new ones, change turn, etc) *)
                 (*Works when changing all tiles from hand*)
-                let st' = State.removeTilesFromHand newTiles st |> State.addNewTiles newTiles |> State.updatePlayerTurn
+                let st' = State.emptyYourHand st.hand st |> State.addNewTiles newTiles |> State.updatePlayerTurn
                 aux st'
                 
 
