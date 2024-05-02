@@ -123,6 +123,11 @@ module Scrabble =
                 send cstream (SMChange (toList st.hand))
 
                 //send cstream (SMPass)
+            
+            //check if dictionary works 
+            let isWordInDictionary = lookup "ORANGE" st.dict
+            forcePrint (sprintf "Is orange in dict ? %b\n" isWordInDictionary )
+
             let msg = recv cstream
 
 
