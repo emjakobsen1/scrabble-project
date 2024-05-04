@@ -37,6 +37,9 @@ module RegEx =
         hand |>
         MultiSet.fold (fun _ x i -> forcePrint (sprintf "%d -> (%A, %d)\n" x (Map.find x pieces) i)) ()
     
+    
+
+    
     let printPlayernumber playerNumber = forcePrint (sprintf "You are player %d\n" playerNumber)
 
     let printTurn turn = forcePrint (sprintf "It is turn %d\n" turn)
@@ -65,7 +68,7 @@ module State =
     let hand st          = st.hand
     let playerTurn st   = st.playerTurn 
     let occupiedSquares st  = st.occupiedSquares
-    
+    // Sets occupied squares on the board when opponent/or you plays a move. 
     let updateStateOnCMPlayed (incomingMoves: list<coord * (uint32 * (char * int))>) (oldState: state) =
         let rec processMoves moves state =
             match moves with
@@ -79,7 +82,7 @@ module State =
     let updatePlayerTurn (st : state) =
         if st.playerTurn = 1u then {st with playerTurn = 2u}
         else {st with playerTurn = 1u}
-
+// When you play a word remove played tiles from hand. 
     let removeOldTiles (ms : list<coord * (uint32 * (char * int))>) (st : state) =
         let rec removeOldTiles (ms : list<coord * (uint32 * (char * int))>) (st : state) =
             match ms with
@@ -88,11 +91,16 @@ module State =
                 let updatedHand = MultiSet.removeSingle id st.hand
                 removeOldTiles rest {st with hand = updatedHand}
         removeOldTiles ms st
-
-    let emptyYourHand (hand : MultiSet.MultiSet<uint32>) (st : state) =
-        let updatedHand = MultiSet.empty
-        {st with hand = updatedHand} 
-
+    //Remove tiles from Hand when you change tiles as a move.
+    let removeTilesFromHand (tiles : (uint32 * uint32) list) (st : state) =
+        let rec removeTilesFromHand (tiles : (uint32 * uint32) list) (st : state) =
+            match tiles with
+            | [] -> st
+            | (id, amount) :: rest -> 
+                let updatedHand = MultiSet.remove id amount st.hand
+                removeTilesFromHand rest {st with hand = updatedHand}
+        removeTilesFromHand tiles st
+    // When you recieve new tiles if u played change. 
     let addNewTiles (newPieces : (uint32 * uint32) list) (st : state) =
         let rec addNewTiles (newPieces : (uint32 * uint32) list) (st : state) =
             match newPieces with
@@ -101,7 +109,43 @@ module State =
                 let updatedHand = MultiSet.add id amount st.hand
                 addNewTiles rest {st with hand = updatedHand}
         addNewTiles newPieces st
+    
+    let handToCharacters pieces hand =
+        hand |>
+        MultiSet.fold (fun acc x i -> (Map.find x pieces)::acc) [] |> List.collect (fun s -> Set.toList (Set.map fst s))
 
+    let handToCharactersButKeepID pieces hand =
+        hand |>
+        MultiSet.fold (fun acc x i -> (Map.find x pieces)::acc) [] |> List.collect (fun s -> Set.toList s)
+
+    let rec generateCombinations chars =
+        match chars with
+        | [] -> [[]]
+        | c::cs ->
+            let withoutC = generateCombinations cs
+            let withC = List.map (fun combo -> c::combo) withoutC
+            withoutC @ withC
+    //Finder 1 ord hvis det er muligt med netop disse chars    
+    let checkCombinationsInDictionary dictionary chars =
+        generateCombinations chars
+        |> List.map (fun combo -> 
+            let word = String.concat "" (List.map string combo)
+            if lookup word dictionary then Some word else None)
+        |> List.tryFind Option.isSome
+        |> Option.flatten
+    //Finder alle ord med de chars den får
+    let FindListOfWordsInDictionary dictionary chars =
+        generateCombinations chars
+        |> List.choose (fun combo -> 
+            let word = String.concat "" (List.map string combo)
+            if lookup word dictionary then Some word else None)
+    let optionStringToString (optString : option<string>) =
+     match optString with
+        | Some s -> s
+        | None -> ""
+
+    let convertToComplexType (charsAndUint32s: (uint32 * (char * int)) list) : (coord * (uint32 * (char * int))) list =
+        charsAndUint32s |> List.mapi (fun i (u, (c, n)) -> ((0, i), (u, (c, n))))
             
 module Scrabble =
     open System.Threading
@@ -113,9 +157,18 @@ module Scrabble =
             let isYourTurn = (State.playerTurn st) = (State.playerNumber st)
             forcePrint (sprintf "Is it your turn? %b\n" isYourTurn)
             Print.printHand pieces (st.hand)
+            let characters = State.handToCharacters pieces (st.hand)//characters
+            let indexesOfCharacters = toList st.hand //indexes
+            let foundWord = State.checkCombinationsInDictionary st.dict characters |> State.optionStringToString 
+            let foundWords = State.FindListOfWordsInDictionary st.dict characters
+            let center = st.board.center
+            forcePrint (sprintf "fandt et ord: %A \n" foundWords) 
+            //debugPrint (sprintf "print print en liste pls %A", characters)
             // remove the force print when you move on from manual input (or when you have learnt the format)
             //forcePrint "Input move (format '(<x-coordinate> <y-coordinate> <piece id><character><point-value> )*', note the absence of space between the last inputs)\n\n"
             if isYourTurn then 
+                
+                // TO DO: Tage nogle fede beslutninger om hvordan man spiller et ord når det er din tur. 
                 // let input =  System.Console.ReadLine()
                 // let move = RegEx.parseMove input
                 // send cstream (SMPlay move)
@@ -123,11 +176,6 @@ module Scrabble =
                 send cstream (SMChange (toList st.hand))
 
                 //send cstream (SMPass)
-            
-            //check if dictionary works 
-            let isWordInDictionary = lookup "ORANGE" st.dict
-            forcePrint (sprintf "Is orange in dict ? %b\n" isWordInDictionary )
-
             let msg = recv cstream
 
 
@@ -146,10 +194,16 @@ module Scrabble =
                 let st' = State.updateStateOnCMPlayed ms st |> State.removeOldTiles ms |> State.addNewTiles newPieces |> State.updatePlayerTurn
                 aux st'
             
-            | RCM (CMChangeSuccess(newTiles)) ->
+            | RCM (CMChangeSuccess( newTiles)) ->
                 (* Successful change by you. Update your state (remove old tiles, add the new ones, change turn, etc) *)
                 (*Works when changing all tiles from hand*)
-                let st' = State.emptyYourHand st.hand st |> State.addNewTiles newTiles |> State.updatePlayerTurn
+                let st' = State.removeTilesFromHand newTiles st |> State.addNewTiles newTiles |> State.updatePlayerTurn
+                aux st'
+            | RCM (CMChange( playerID, newTiles)) ->
+                
+                (*Works when changing all tiles from hand*)
+                //debugPrint (  sprintf "playerID %d", playerID)
+                let st' =  State.updatePlayerTurn st
                 aux st'
                 
 
