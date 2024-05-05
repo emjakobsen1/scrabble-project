@@ -166,7 +166,11 @@ module State =
     let makeListOfCharsFromString (s : string) =
         s |> Seq.toList
     
-    
+
+    let charToUint char = 
+        if (char = '?') then 0u
+        else uint32(System.Char.ToUpper(char)) - 64u
+       
 
         
             
@@ -200,9 +204,10 @@ module Scrabble =
             let longestWordAsChars = State.makeListOfCharsFromString longestWord
             //debugPrint (sprintf "Longest word as chars: %A\n" longestWordAsChars)
             
-            
-               
-          
+            //con
+            let findIdToChar =  List.map (fun x -> State.charToUint x) longestWordAsChars
+            debugPrint (sprintf "Find id to char: %A\n" findIdToChar)
+                
 
             
 
