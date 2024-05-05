@@ -117,7 +117,9 @@ module State =
         hand |>
         MultiSet.fold (fun acc x i -> (Map.find x pieces)::acc) [] |> List.collect (fun s -> Set.toList (Set.map fst s))
 
-    
+    let emptyYourHand (hand : MultiSet.MultiSet<uint32>) (st : state) =
+        let updatedHand = MultiSet.empty
+        {st with hand = updatedHand} 
        
 
     let handToCharactersButKeepID pieces hand =
@@ -241,7 +243,7 @@ module Scrabble =
             | RCM (CMChangeSuccess( newTiles)) ->
                 (* Successful change by you. Update your state (remove old tiles, add the new ones, change turn, etc) *)
                 (*Works when changing all tiles from hand*)
-                let st' = State.removeTilesFromHand newTiles st |> State.addNewTiles newTiles |> State.updatePlayerTurn
+                let st' = State.emptyYourHand st.hand st |> State.addNewTiles newTiles |> State.updatePlayerTurn
                 aux st'
             | RCM (CMChange( playerID, newTiles)) ->
                 
