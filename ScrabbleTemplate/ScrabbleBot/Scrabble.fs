@@ -160,8 +160,7 @@ module State =
         | None -> ""
 
     //cords to list of chars on an empty board. Not checking for center of board though.
-    let convertToComplexType (charsAndUint32s: (uint32 * (char * int)) list) : (coord * (uint32 * (char * int))) list =
-        charsAndUint32s |> List.mapi (fun i (u, (c, n)) -> ((0, i), (u, (c, n))))
+    
 
     let makeListOfCharsFromString (s : string) =
         s |> Seq.toList
@@ -170,10 +169,17 @@ module State =
     let charToUint char = 
         if (char = '?') then 0u
         else uint32(System.Char.ToUpper(char)) - 64u
-       
+
+    let SetToList (map: (uint32 * Set<'c * 'd>) list) =
+        map |> List.collect (fun (x, s) -> Set.toList s |> List.map (fun (c, d) -> (x, (c, d))))
+
+    let makeFirstMoveFromList (list: (uint32 * (char * int)) list) (center: coord) =
+        let firstCoordX = fst center in
+        let firstCoordY = snd center in
 
         
-            
+        List.mapi (fun i (id, (char, point)) -> (coord(firstCoordX + i, firstCoordY), (id, (char, point)))) list 
+  
 module Scrabble =
     open System.Threading
 
@@ -198,39 +204,43 @@ module Scrabble =
             
             //finds the longest word from the list of found words
             let longestWord = foundWords |> List.maxBy (fun x -> x.Length)
-            //debugPrint (sprintf "Longest word: %A\n" longestWord)
+            debugPrint (sprintf "Longest word: %A\n" longestWord)
 
             //converts the longest word to a list of characters
             let longestWordAsChars = State.makeListOfCharsFromString longestWord
             //debugPrint (sprintf "Longest word as chars: %A\n" longestWordAsChars)
             
-            //con
+            //converts chars to ids
             let findIdToChar =  List.map (fun x -> State.charToUint x) longestWordAsChars
             debugPrint (sprintf "Find id to char: %A\n" findIdToChar)
-                
-
             
+            //finds the points of the characters
+            let idToPoints = List.map (fun x -> (x, Map.find x pieces)) findIdToChar
+            //debugPrint (sprintf "Id to points: %A\n" idToPoints)
 
-            //print pieces
-            debugPrint (sprintf "Printing pieces: %A\n" pieces)
-           
+            let formatTotuple = State.SetToList idToPoints
+            debugPrint (sprintf "Format to tuple: %A\n" formatTotuple)
 
-            
-            //center of board: ex (0, 0)
-            let center = st.board.center
+            //create coords for first move
+            let move = State.makeFirstMoveFromList formatTotuple st.board.center
+            debugPrint (sprintf "Move: %A\n" move)
+
+  
+
 
             forcePrint (sprintf "fandt et ord: %A \n" foundWords) 
             //debugPrint (sprintf "print print en liste pls %A", characters)
             // remove the force print when you move on from manual input (or when you have learnt the format)
             //forcePrint "Input move (format '(<x-coordinate> <y-coordinate> <piece id><character><point-value> )*', note the absence of space between the last inputs)\n\n"
             if isYourTurn then 
-                
-                // TO DO: Tage nogle fede beslutninger om hvordan man spiller et ord når det er din tur. 
-                // let input =  System.Console.ReadLine()
-                // let move = RegEx.parseMove input
-                // send cstream (SMPlay move)
-
-                send cstream (SMChange (toList st.hand))
+                if st.occupiedSquares.IsEmpty then
+                    if foundWord <> "" then
+                        send cstream (SMPlay move)
+                    else
+                    send cstream (SMChange (toList st.hand))
+                else
+                    send cstream (SMPass)
+               
 
                 //send cstream (SMPass)
             let msg = recv cstream
