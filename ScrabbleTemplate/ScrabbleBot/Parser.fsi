@@ -19,3 +19,5 @@ module internal Parser
     }
 
     val mkBoard : boardProg -> board
+
+    

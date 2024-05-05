@@ -37,7 +37,8 @@ module RegEx =
         hand |>
         MultiSet.fold (fun _ x i -> forcePrint (sprintf "%d -> (%A, %d)\n" x (Map.find x pieces) i)) ()
     
-    
+    let printCharecters chars = 
+        chars |> List.iter (fun c -> forcePrint (sprintf "%c" c))
 
     
     let printPlayernumber playerNumber = forcePrint (sprintf "You are player %d\n" playerNumber)
@@ -49,6 +50,8 @@ module State =
     // Currently, it only keeps track of your hand, your player numer, your board, and your dictionary,
     // but it could, potentially, keep track of other useful
     // information, such as number of players, player turn, etc.
+    open Eval
+    open MultiSet
 
     type state = {
         board         : Parser.board
@@ -114,10 +117,14 @@ module State =
         hand |>
         MultiSet.fold (fun acc x i -> (Map.find x pieces)::acc) [] |> List.collect (fun s -> Set.toList (Set.map fst s))
 
+    
+       
+
     let handToCharactersButKeepID pieces hand =
         hand |>
         MultiSet.fold (fun acc x i -> (Map.find x pieces)::acc) [] |> List.collect (fun s -> Set.toList s)
 
+    //takes list of characters and returns a list of all possible combinations of the characters of different lengths
     let rec generateCombinations chars =
         match chars with
         | [] -> [[]]
@@ -125,27 +132,41 @@ module State =
             let withoutC = generateCombinations cs
             let withC = List.map (fun combo -> c::combo) withoutC
             withoutC @ withC
+    
     //Finder 1 ord hvis det er muligt med netop disse chars    
     let checkCombinationsInDictionary dictionary chars =
+        //Starts of by making all possible combinations of the chars. List of lists of chars
         generateCombinations chars
+        //Maps over the list of lists of chars and makes a string of the chars in the list
         |> List.map (fun combo -> 
             let word = String.concat "" (List.map string combo)
+            //returns true when word is in dictionary
             if lookup word dictionary then Some word else None)
         |> List.tryFind Option.isSome
         |> Option.flatten
+    
     //Finder alle ord med de chars den får
     let FindListOfWordsInDictionary dictionary chars =
         generateCombinations chars
         |> List.choose (fun combo -> 
             let word = String.concat "" (List.map string combo)
             if lookup word dictionary then Some word else None)
+    
     let optionStringToString (optString : option<string>) =
      match optString with
         | Some s -> s
         | None -> ""
 
+    //cords to list of chars on an empty board. Not checking for center of board though.
     let convertToComplexType (charsAndUint32s: (uint32 * (char * int)) list) : (coord * (uint32 * (char * int))) list =
         charsAndUint32s |> List.mapi (fun i (u, (c, n)) -> ((0, i), (u, (c, n))))
+
+    let makeListOfCharsFromString (s : string) =
+        s |> Seq.toList
+    
+    
+
+        
             
 module Scrabble =
     open System.Threading
@@ -155,13 +176,42 @@ module Scrabble =
             
             //check if it is the player's turn
             let isYourTurn = (State.playerTurn st) = (State.playerNumber st)
-            forcePrint (sprintf "Is it your turn? %b\n" isYourTurn)
+            //forcePrint (sprintf "Is it your turn? %b\n" isYourTurn)
             Print.printHand pieces (st.hand)
+            
+            //list of all characters in hand ex: ['T'; 'R'; 'Q'; 'O'; 'N'; 'L'; 'J'; 'I'; 'H'; 'G'; 'E'; 'D'; 'B'; 'A']
             let characters = State.handToCharacters pieces (st.hand)//characters
+            debugPrint (sprintf "Printing characters: %A\n" characters)
+            
+            //list of all the unit values for the characters in hand ex: [1u; 2u; 4u; 5u; 7u; 8u; 9u; 10u; 12u; 14u; 15u; 17u; 18u; 20u]
             let indexesOfCharacters = toList st.hand //indexes
+            debugPrint (sprintf "Printing indexes: %A\n" indexesOfCharacters)
+            
             let foundWord = State.checkCombinationsInDictionary st.dict characters |> State.optionStringToString 
             let foundWords = State.FindListOfWordsInDictionary st.dict characters
+            
+            //finds the longest word from the list of found words
+            let longestWord = foundWords |> List.maxBy (fun x -> x.Length)
+            //debugPrint (sprintf "Longest word: %A\n" longestWord)
+
+            //converts the longest word to a list of characters
+            let longestWordAsChars = State.makeListOfCharsFromString longestWord
+            //debugPrint (sprintf "Longest word as chars: %A\n" longestWordAsChars)
+            
+            
+               
+          
+
+            
+
+            //print pieces
+            debugPrint (sprintf "Printing pieces: %A\n" pieces)
+           
+
+            
+            //center of board: ex (0, 0)
             let center = st.board.center
+
             forcePrint (sprintf "fandt et ord: %A \n" foundWords) 
             //debugPrint (sprintf "print print en liste pls %A", characters)
             // remove the force print when you move on from manual input (or when you have learnt the format)
@@ -178,12 +228,6 @@ module Scrabble =
                 //send cstream (SMPass)
             let msg = recv cstream
 
-
-            // debugPrint (sprintf "Player %d -> Server:\n%A\n" (State.playerNumber st) move) // keep the debug lines. They are useful.
-           
-            //send cstream (SMPlay move)
-            //send cstream (SMPass)
-            
 
             
             // debugPrint (sprintf "Player %d <- Server:\n%A\n" (State.playerNumber st) move) // keep the debug lines. They are useful.
