@@ -154,22 +154,42 @@ module State =
             let word = String.concat "" (List.map string combo)
             if lookup word dictionary then Some word else None)
     
-    let optionStringToString (optString : option<string>) =
-     match optString with
-        | Some s -> s
-        | None -> ""
-
+    let FindListOfWordsInDictionary2 dictionary chars c =
+        generateCombinations (chars@[c])
+        |> List.choose (fun combo -> 
+            let word = String.concat "" (List.map string combo)
+            if lookup word dictionary && List.head combo = c then Some word else None)
+        
+    
     //cords to list of chars on an empty board. Not checking for center of board though.
-    let convertToComplexType (charsAndUint32s: (uint32 * (char * int)) list) : (coord * (uint32 * (char * int))) list =
-        charsAndUint32s |> List.mapi (fun i (u, (c, n)) -> ((0, i), (u, (c, n))))
-
     let makeListOfCharsFromString (s : string) =
         s |> Seq.toList
     
-    
+
+    let charToUint char = 
+        if (char = '?') then 0u
+        else uint32(System.Char.ToUpper(char)) - 64u
+
+    let SetToList (map: (uint32 * Set<'c * 'd>) list) =
+        map |> List.collect (fun (x, s) -> Set.toList s |> List.map (fun (c, d) -> (x, (c, d))))
+
+    let makeFirstMoveFromList (list: (uint32 * (char * int)) list) (center: coord) =
+        let firstCoordX = fst center in
+        let firstCoordY = snd center in
 
         
-            
+        List.mapi (fun i (id, (char, point)) -> (coord(firstCoordX + i, firstCoordY), (id, (char, point)))) list 
+    
+    let mapToListOfChars (map: Map<coord, (uint32 * (char*int))>) : char list =
+        Map.fold (fun acc _  (_,(char, _)) -> char :: acc) [] map
+
+    let getFirstElement lst =
+        match lst with
+        | [] -> failwith "Empty list"
+        | _ -> List.head
+
+    
+        
 module Scrabble =
     open System.Threading
 
@@ -179,7 +199,7 @@ module Scrabble =
             //check if it is the player's turn
             let isYourTurn = (State.playerTurn st) = (State.playerNumber st)
             //forcePrint (sprintf "Is it your turn? %b\n" isYourTurn)
-            Print.printHand pieces (st.hand)
+            //Print.printHand pieces (st.hand)
             
             //list of all characters in hand ex: ['T'; 'R'; 'Q'; 'O'; 'N'; 'L'; 'J'; 'I'; 'H'; 'G'; 'E'; 'D'; 'B'; 'A']
             let characters = State.handToCharacters pieces (st.hand)//characters
@@ -187,9 +207,9 @@ module Scrabble =
             
             //list of all the unit values for the characters in hand ex: [1u; 2u; 4u; 5u; 7u; 8u; 9u; 10u; 12u; 14u; 15u; 17u; 18u; 20u]
             let indexesOfCharacters = toList st.hand //indexes
-            debugPrint (sprintf "Printing indexes: %A\n" indexesOfCharacters)
+            //debugPrint (sprintf "Printing indexes: %A\n" indexesOfCharacters)
             
-            let foundWord = State.checkCombinationsInDictionary st.dict characters |> State.optionStringToString 
+            //let foundWord = State.checkCombinationsInDictionary st.dict characters |> State.optionStringToString 
             let foundWords = State.FindListOfWordsInDictionary st.dict characters
             
             //finds the longest word from the list of found words
@@ -200,32 +220,47 @@ module Scrabble =
             let longestWordAsChars = State.makeListOfCharsFromString longestWord
             //debugPrint (sprintf "Longest word as chars: %A\n" longestWordAsChars)
             
+            //converts chars to ids
+            let findIdToChar =  List.map (fun x -> State.charToUint x) longestWordAsChars
+            debugPrint (sprintf "Find id to char: %A\n" findIdToChar)
             
-               
-          
+            //finds the points of the characters
+            let idToPoints = List.map (fun x -> (x, Map.find x pieces)) findIdToChar
+            //debugPrint (sprintf "Id to points: %A\n" idToPoints)
+
+            let formatTotuple = State.SetToList idToPoints
+            //debugPrint (sprintf "Format to tuple: %A\n" formatTotuple)
+
+            //create coords for first move
+            let move = State.makeFirstMoveFromList formatTotuple st.board.center
+            //debugPrint (sprintf "Move: %A\n" move)
 
             
 
-            //print pieces
-            debugPrint (sprintf "Printing pieces: %A\n" pieces)
-           
+  
 
-            
-            //center of board: ex (0, 0)
-            let center = st.board.center
 
             forcePrint (sprintf "fandt et ord: %A \n" foundWords) 
             //debugPrint (sprintf "print print en liste pls %A", characters)
             // remove the force print when you move on from manual input (or when you have learnt the format)
             //forcePrint "Input move (format '(<x-coordinate> <y-coordinate> <piece id><character><point-value> )*', note the absence of space between the last inputs)\n\n"
             if isYourTurn then 
-                
-                // TO DO: Tage nogle fede beslutninger om hvordan man spiller et ord når det er din tur. 
-                // let input =  System.Console.ReadLine()
-                // let move = RegEx.parseMove input
-                // send cstream (SMPlay move)
+                if st.occupiedSquares.IsEmpty then
+                    if foundWords.Length > 0 then
+                        send cstream (SMPlay move)
+                    else
+                    send cstream (SMChange (toList st.hand))
+                else
+                    let boardChars = State.mapToListOfChars st.occupiedSquares
+                    debugPrint (sprintf "Board chars: %A\n" boardChars)
 
-                send cstream (SMChange (toList st.hand))
+                    let allPossibleWords = State.FindListOfWordsInDictionary2 st.dict (boardChars@characters) 'A'
+                    debugPrint( sprintf "All possible words: %A\n" allPossibleWords)
+                    let findWordFromBoard = State.FindListOfWordsInDictionary2 st.dict characters 'A'
+                    debugPrint (sprintf "Find word from board: %A\n" findWordFromBoard)
+
+                    send cstream (SMPass)
+               
 
                 //send cstream (SMPass)
             let msg = recv cstream
