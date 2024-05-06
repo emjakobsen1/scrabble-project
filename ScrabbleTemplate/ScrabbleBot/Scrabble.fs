@@ -113,18 +113,19 @@ module State =
                 addNewTiles rest {st with hand = updatedHand}
         addNewTiles newPieces st
     
-    let handToCharacters pieces hand =
-        hand |>
-        MultiSet.fold (fun acc x i -> (Map.find x pieces)::acc) [] |> List.collect (fun s -> Set.toList (Set.map fst s))
+    let handToCharacters2 pieces hand =
+        hand 
+        |> MultiSet.fold (fun acc x i -> if x <> 0u then (Map.find x pieces)::acc else acc) [] 
+        |> List.collect (fun s -> Set.toList (Set.map fst s))
+
+    let handToCharacters (pieces: Map<uint32, tile>) (hand : MultiSet.MultiSet<uint32>) =
+        MultiSet.fold (fun acc x i -> (Map.find x pieces)::acc) [] hand 
+        // MultiSet.fold (fun acc x i -> (Map.find x pieces)::acc) [] |> List.collect (fun s -> Set.toList (Set.map fst s))
 
     let emptyYourHand (hand : MultiSet.MultiSet<uint32>) (st : state) =
         let updatedHand = MultiSet.empty
         {st with hand = updatedHand} 
        
-
-    let handToCharactersButKeepID pieces hand =
-        hand |>
-        MultiSet.fold (fun acc x i -> (Map.find x pieces)::acc) [] |> List.collect (fun s -> Set.toList s)
 
     //takes list of characters and returns a list of all possible combinations of the characters of different lengths
 
@@ -168,24 +169,33 @@ module State =
     let makeStringFromList (chars: char list) =
         String.concat "" (List.map string chars)
 
-    let findAllPermutationsFromHandAndBoard (charsInHand: char list) (charsOnboard: char list) =
-            //creates list of a list of all unique combinations of the characters in hand such that ['a'; 'b'; ] -> ['a'; 'b']; ['a']; ['b']; [];
-            //let allCombination = generateCombinations charsInHand
-           
-            // //puts all the combinations in a list of all possible combinations of the characters in hand such that ['a'; 'b'; ] -> ['a'; 'b']; ['b'; 'a'] ['a']; ['b']; [];
-            let allPermutations = generateAllStringsFromList charsInHand
-            //let allPermutations =
-            //adds the first character to the front of all the combinations such that 'x' ['a'; 'b'; ] -> ['x'; 'a'; 'b']; ['x'; 'b'; 'a'] ['x'; 'a']; ['x'; 'b']; ['x'
-            List.fold (fun acc charFromBoard ->
-                let allwordWithFirstChar = addCharToFront charFromBoard allPermutations
-                acc @ allwordWithFirstChar
-            ) [] charsOnboard
+    let rec generatePermutations lst =
+        match lst with
+        | [] -> [[]]
+        | _ ->
+            [ for x in lst do
+                for perm in generatePermutations (List.filter ((<>) x) lst) do
+                    yield x :: perm ]
+    let findAllPermutationsFromHandAndBoard (charsInHand: char list) (char: char) =
+            debugPrint(sprintf "SLOW 1")
+            debugPrint(sprintf "Char: %c" char)
+            debugPrint(sprintf "CharsInHand: %A" charsInHand)
+            let combination = generateCombinations charsInHand
+            debugPrint(sprintf "SLOW 2")
+            let allPermutations = List.collect (fun x -> generatePermutations x) combination
+            debugPrint(sprintf "SLOW 3")
+
+            List.map (fun list -> char :: list) allPermutations
+            // List.fold (fun acc x -> 
+            //     let word = char :: x
+            //     acc @ [word]
+            // ) [] allPermutations 
+            
   
    
     let makeListOfCharsFromString (s : string) =
         s |> Seq.toList
     
-
     let charToUint char = 
         if (char = '?') then 0u
         else uint32(System.Char.ToUpper(char)) - 64u
@@ -213,7 +223,7 @@ module State =
     let getWordFromBoard (map: Map<coord, (uint32 * (char * int))>) (hand: char list) (dict: Dict) =
         Map.fold (fun acc coord (_, (char, _)) ->
             debugPrint(sprintf "here 1")
-            let combinationWithHand = findAllPermutationsFromHandAndBoard hand [char]
+            let combinationWithHand = findAllPermutationsFromHandAndBoard hand char
             debugPrint(sprintf "here 2")
             let combsToString = List.map (fun x -> makeStringFromList x) combinationWithHand
             debugPrint(sprintf "here 3")
@@ -320,12 +330,11 @@ module Scrabble =
         let rec aux (st : State.state) =
             debugPrint(sprintf "good 1")
             let isYourTurn = (State.playerTurn st) = (State.playerNumber st)
-    
             
             if isYourTurn then 
                 if st.occupiedSquares.IsEmpty then
                     debugPrint(sprintf "good 2")
-                    let characters = State.handToCharacters pieces (st.hand)
+                    let characters = State.handToCharacters2 pieces (st.hand)
                     debugPrint(sprintf "good 3")
                     let foundWords = State.FindListOfWordsInDictionary st.dict characters
                     debugPrint(sprintf "good 3")
@@ -345,7 +354,7 @@ module Scrabble =
                     else
                         send cstream (SMChange (toList st.hand))
                 else
-                    let hand = State.handToCharacters pieces (st.hand)
+                    let hand = State.handToCharacters2 pieces (st.hand)
                     debugPrint (sprintf "So far So goood 1")
                     let mapOfCordsToWords = State.getWordFromBoard st.occupiedSquares hand st.dict      
                     debugPrint (sprintf "So far So goood 2")
