@@ -312,154 +312,78 @@ module State =
     let removeFirstLetterFromWords (words: (coord * (uint32 * (char * int))) list list) =
         List.map (fun word -> List.tail word) words
 
+    let longestFoundWord (lists:'a list list) =
+        List.maxBy List.length lists
+
 module Scrabble =
     open System.Threading
 
     let playGame cstream pieces (st : State.state) =
         let rec aux (st : State.state) =
-            
-            //check if it is the player's turn
+      
             let isYourTurn = (State.playerTurn st) = (State.playerNumber st)
-            //forcePrint (sprintf "Is it your turn? %b\n" isYourTurn)
-            //Print.printHand pieces (st.hand)
-            
-            //list of all characters in hand ex: ['T'; 'R'; 'Q'; 'O'; 'N'; 'L'; 'J'; 'I'; 'H'; 'G'; 'E'; 'D'; 'B'; 'A']
-            let characters = State.handToCharacters pieces (st.hand)//characters
-            debugPrint (sprintf "Printing characters: %A\n" characters)
-            
-            //list of all the unit values for the characters in hand ex: [1u; 2u; 4u; 5u; 7u; 8u; 9u; 10u; 12u; 14u; 15u; 17u; 18u; 20u]
-            let indexesOfCharacters = toList st.hand //indexes
-            //debugPrint (sprintf "Printing indexes: %A\n" indexesOfCharacters)
-            
-            //let foundWord = State.checkCombinationsInDictionary st.dict characters |> State.optionStringToString 
+        
+            let characters = State.handToCharacters pieces (st.hand)
+              
             let foundWords = State.FindListOfWordsInDictionary st.dict characters
             
-            //finds the longest word from the list of found words
             let longestWord = foundWords |> List.maxBy (fun x -> x.Length)
-            //debugPrint (sprintf "Longest word: %A\n" longestWord)
-
-            //converts the longest word to a list of characters
+           
             let longestWordAsChars = State.makeListOfCharsFromString longestWord
-            //debugPrint (sprintf "Longest word as chars: %A\n" longestWordAsChars)
             
-            //converts chars to ids
             let findIdToChar =  List.map (fun x -> State.charToUint x) longestWordAsChars
-            debugPrint (sprintf "Find id to char: %A\n" findIdToChar)
-            
-            //finds the points of the characters
+  
             let idToPoints = List.map (fun x -> (x, Map.find x pieces)) findIdToChar
-            //debugPrint (sprintf "Id to points: %A\n" idToPoints)
 
             let formatTotuple = State.SetToList idToPoints
-            //debugPrint (sprintf "Format to tuple: %A\n" formatTotuple)
 
-            //create coords for first move
-            
-            //debugPrint (sprintf "Move: %A\n" move)
-
-            // let board = Map[(coord(-6, 2), (3u, ('C', 3))); (coord(-6, 3), (21u, ('U', 1)));
-            //     (coord(-6, 4), (12u, ('L', 1))); (coord(-6, 5), (20u, ('T', 1)));
-            //     (coord(-6, 6), (9u, ('I', 1)));]
-
-            // let hand = ['A'; 'B'; 'C']
-
-            //
-            // let mapOfCordsToWords = State.getWordFromBoard board hand st.dict      
-            // //debugPrint (sprintf "Map to valid: %A\n" mapOfCordsToWords)
-
-            // let makeCordsForWordsHorizontal = State.makeCordsToWordsHorizonatal mapOfCordsToWords pieces "horizontal"
-            // //debugPrint (sprintf "Make cords for words horizontal: %A\n" makeCordsForWordsHorizontal)
-
-            // let makeCordsForWordsVertical = State.makeCordsToWordsHorizonatal mapOfCordsToWords pieces "vertical"
-            // debugPrint (sprintf "Make cords for words vertical: %A\n" makeCordsForWordsVertical)
-
-            // let validateWords = State.validateWordsOnBoardVertical makeCordsForWordsVertical st.occupiedSquares
-            // debugPrint (sprintf "Validate words: %A\n" validateWords)
-
-
-            // let allCombination = State.generateCombinations inputChars
-            // let allPermutations = State.generateAllStringsFromList inputChars
-
-            //let boardWords = State.findAllPermutationsFromHandAndBoard inputChars firstChar
-            //debugPrint (sprintf "Board words: %A\n" boardWords)
-            
-            //let combsToString = List.map (fun x -> State.makeStringFromList x) boardWords
-            //let checkCombsInDic = State.findListOfWordsInDictionaryFromBoard st.dict combsToString
-            //debugPrint (sprintf "Check combs in dic: %A\n" checkCombsInDic)
-            //let longestWordFromCombs = combsOfDicWords |> List.maxBy (fun x -> x.Length)
-            //debugPrint(sprintf "longestWordFromCombs: %A\" longestWordFromCombs)
-
-            //let dicWordsTochar = List.map (fun word-> State.makeListOfCharsFromString word) checkCombsInDic
-            
-
-
-            //forcePrint (sprintf "fandt et ord: %A \n" foundWords) 
-            //debugPrint (sprintf "print print en liste pls %A", characters)
-            // remove the force print when you move on from manual input (or when you have learnt the format)
-            //forcePrint "Input move (format '(<x-coordinate> <y-coordinate> <piece id><character><point-value> )*', note the absence of space between the last inputs)\n\n"
             if isYourTurn then 
                 if st.occupiedSquares.IsEmpty then
                     if foundWords.Length > 0 then
                         let move = State.makeCordsVertical formatTotuple st.board.center
                         send cstream (SMPlay move)
                     else
-                    send cstream (SMChange (toList st.hand))
+                        send cstream (SMChange (toList st.hand))
                 else
                     let hand = State.handToCharacters pieces (st.hand)
                    
                     let mapOfCordsToWords = State.getWordFromBoard st.occupiedSquares hand st.dict      
-                    //debugPrint (sprintf "Map to valid: %A\n" mapOfCordsToWords)
-
-                    // let makeCordsForWordsHorizontal = State.makeCordsToWordsHorizonatal mapOfCordsToWords pieces "horizontal"
-                    // //debugPrint (sprintf "Make cords for words horizontal: %A\n" makeCordsForWordsHorizontal)
 
                     let makeCordsForWordsVertical = State.makeCordsToWords mapOfCordsToWords pieces "vertical"
-               
 
                     let validateWordsVertical = State.validateWordsOnBoardVertical makeCordsForWordsVertical st.occupiedSquares
-                    //debugPrint (sprintf "Validate words: %A\n" validateWordsVertical)
                     
                     if(validateWordsVertical.Length = 0) then
                         let makeCordsForWordsHorizontal = State.makeCordsToWords mapOfCordsToWords pieces "horizontal"
+                        
                         let validateWordsHorizontal = State.validateWordsOnBoardHorizontal makeCordsForWordsHorizontal st.occupiedSquares
                         
                         if (validateWordsHorizontal.Length = 0) then
                             send cstream (SMPass)
                         else
                             let removeLetterFromBoardInWords = State.removeFirstLetterFromWords validateWordsHorizontal
-                            let move = List.head removeLetterFromBoardInWords
-                            debugPrint (sprintf "Move: %A\n" move)
-                            send cstream (SMPlay move)
+                            let move3 = State.longestFoundWord removeLetterFromBoardInWords
+                            debugPrint (sprintf "Move: %A\n" move3)
+                            send cstream (SMPlay move3)
                     else   
-                        let wordWithFirstLetter = List.head validateWordsVertical
-                        //debugPrint (sprintf "Word with first letter: %A\n" wordWithFirstLetter)
-
                         let removeLetterFromBoardInWords = State.removeFirstLetterFromWords validateWordsVertical
 
                         if removeLetterFromBoardInWords.Length > 0 then
-                            let move2 = List.head removeLetterFromBoardInWords
+                            let move2 = State.longestFoundWord removeLetterFromBoardInWords
                             debugPrint (sprintf "Move: %A\n" move2)
                             send cstream (SMPlay move2)
                         else
                             send cstream (SMChange (toList st.hand))
                         
-                        // send cstream (SMPass)
-               
-
-                //send cstream (SMPass)
             let msg = recv cstream
 
-
-            
-            // debugPrint (sprintf "Player %d <- Server:\n%A\n" (State.playerNumber st) move) // keep the debug lines. They are useful.
-            
             match msg with
             | RCM (CMPlaySuccess(ms, points, newPieces)) ->
                 (* Successful play by you. Update your state (remove old tiles, add the new ones, change turn, etc) *)
                 let st' = State.updateStateOnCMPlayed ms st |> State.removeOldTiles ms |> State.addNewTiles newPieces |> State.updatePlayerTurn
                 aux st'
             
-            | RCM (CMChangeSuccess( newTiles)) ->
+            | RCM (CMChangeSuccess(newTiles)) ->
                 (* Successful change by you. Update your state (remove old tiles, add the new ones, change turn, etc) *)
                 (*Works when changing all tiles from hand*)
                 let st' = State.emptyYourHand st.hand st |> State.addNewTiles newTiles |> State.updatePlayerTurn
