@@ -220,7 +220,7 @@ module State =
             | None -> Map.add coord checkCombsInDic acc
         ) Map.empty map
 
-    let makeCordsToWordsHorizonatal (map: Map<coord, string list>) pieces (direction: string) =
+    let makeCordsToWords (map: Map<coord, string list>) pieces (direction: string) =
         Map.fold (fun acc coord words ->
             List.fold(fun acc word ->
                 let wordAsChars = makeListOfCharsFromString word
@@ -275,7 +275,40 @@ module State =
             if validateWord then acc @ [word]
             else acc
         ) [] words
+    
+    let rec validateRestOfWordHorizontal (word: (coord * (uint32 * (char * int))) list) (occupiedSquares: Map<coord, (uint32 * (char*int))>) =
+        match word with
+        | [] -> true // Base case: All squares in the word are valid
+        | (coord, _) :: rest ->
+            let aboveCoord = (fst coord, snd coord - 1)
+            let rightCoord = (fst coord + 1, snd coord)
+            let belowCoord = (fst coord, snd coord + 1)
+            match Map.tryFind coord occupiedSquares with
+            | Some(_) -> false // The current square is occupied
+            | None ->
+                match (Map.tryFind aboveCoord occupiedSquares, Map.tryFind rightCoord occupiedSquares, Map.tryFind belowCoord occupiedSquares) with
+                | (Some(_), _, _) -> false // The square to the left is occupied
+                | (_, Some(_), _) -> false // The square to the right is occupied
+                | (_, _, Some(_)) -> false // The square below is occupied
+                | _ -> validateRestOfWordHorizontal rest occupiedSquares // Recur with the rest of the word list
+            
+    let validateWordHorizontal (word: (coord * (uint32 * (char * int))) list) (occupiedSquares: Map<coord, (uint32 * (char*int))>) =
+       match word with
+        | [] -> true // Base case: All squares in the word are valid
+        | (currentCoord, _) :: _ ->
+            let leftCoord = (fst currentCoord - 1, snd currentCoord)
+            match Map.tryFind leftCoord occupiedSquares with
+            | Some(_) -> false // The square above is occupied
+            | None -> validateRestOfWordHorizontal (List.tail word) occupiedSquares // Recur with the tail of the word list
 
+
+    let validateWordsOnBoardHorizontal (words: (coord * (uint32 * (char * int))) list list) (occupiedSquares: Map<coord, (uint32 * (char*int))>) =
+        List.fold (fun acc word ->
+            let validateWord = validateWordHorizontal word occupiedSquares
+            if validateWord then acc @ [word]
+            else acc
+        ) [] words
+    
     let removeFirstLetterFromWords (words: (coord * (uint32 * (char * int))) list list) =
         List.map (fun word -> List.tail word) words
 
@@ -380,27 +413,37 @@ module Scrabble =
                     // let makeCordsForWordsHorizontal = State.makeCordsToWordsHorizonatal mapOfCordsToWords pieces "horizontal"
                     // //debugPrint (sprintf "Make cords for words horizontal: %A\n" makeCordsForWordsHorizontal)
 
-                    let makeCordsForWordsVertical = State.makeCordsToWordsHorizonatal mapOfCordsToWords pieces "vertical"
-                    debugPrint (sprintf "Make cords for words vertical: %A\n" makeCordsForWordsVertical)
-                    //let firstwor = List.head makeCordsForWordsVertical
-                    //debugPrint (sprintf "First word: %A\n" firstwor)
+                    let makeCordsForWordsVertical = State.makeCordsToWords mapOfCordsToWords pieces "vertical"
+               
 
-                    let validateWords = State.validateWordsOnBoardVertical makeCordsForWordsVertical st.occupiedSquares
-                    debugPrint (sprintf "Validate words: %A\n" validateWords)
-
-                    let wordWithFirstLetter = List.head validateWords
-                    debugPrint (sprintf "Word with first letter: %A\n" wordWithFirstLetter)
-
-                    let removeLetterFromBoardInWords = State.removeFirstLetterFromWords validateWords
-
-                    if removeLetterFromBoardInWords.Length > 0 then
-                        let move2 = List.head removeLetterFromBoardInWords
-                        debugPrint (sprintf "Move: %A\n" move2)
-                        send cstream (SMPlay move2)
-                    else
-                        send cstream (SMChange (toList st.hand))
+                    let validateWordsVertical = State.validateWordsOnBoardVertical makeCordsForWordsVertical st.occupiedSquares
+                    //debugPrint (sprintf "Validate words: %A\n" validateWordsVertical)
                     
-                    // send cstream (SMPass)
+                    if(validateWordsVertical.Length = 0) then
+                        let makeCordsForWordsHorizontal = State.makeCordsToWords mapOfCordsToWords pieces "horizontal"
+                        let validateWordsHorizontal = State.validateWordsOnBoardHorizontal makeCordsForWordsHorizontal st.occupiedSquares
+                        
+                        if (validateWordsHorizontal.Length = 0) then
+                            send cstream (SMPass)
+                        else
+                            let removeLetterFromBoardInWords = State.removeFirstLetterFromWords validateWordsHorizontal
+                            let move = List.head removeLetterFromBoardInWords
+                            debugPrint (sprintf "Move: %A\n" move)
+                            send cstream (SMPlay move)
+                    else   
+                        let wordWithFirstLetter = List.head validateWordsVertical
+                        //debugPrint (sprintf "Word with first letter: %A\n" wordWithFirstLetter)
+
+                        let removeLetterFromBoardInWords = State.removeFirstLetterFromWords validateWordsVertical
+
+                        if removeLetterFromBoardInWords.Length > 0 then
+                            let move2 = List.head removeLetterFromBoardInWords
+                            debugPrint (sprintf "Move: %A\n" move2)
+                            send cstream (SMPlay move2)
+                        else
+                            send cstream (SMChange (toList st.hand))
+                        
+                        // send cstream (SMPass)
                
 
                 //send cstream (SMPass)
