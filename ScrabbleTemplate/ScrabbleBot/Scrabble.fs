@@ -127,6 +127,7 @@ module State =
         MultiSet.fold (fun acc x i -> (Map.find x pieces)::acc) [] |> List.collect (fun s -> Set.toList s)
 
     //takes list of characters and returns a list of all possible combinations of the characters of different lengths
+
     let rec generateCombinations chars =
         match chars with
         | [] -> [[]]
@@ -135,6 +136,10 @@ module State =
             let withC = List.map (fun combo -> c::combo) withoutC
             withoutC @ withC
     
+    let generateAllStringsFromList (chars: char list) =
+        let combinations = generateCombinations chars
+        List.collect (fun combo -> generateCombinations combo) combinations
+ 
     //Finder 1 ord hvis det er muligt med netop disse chars    
     let checkCombinationsInDictionary dictionary chars =
         //Starts of by making all possible combinations of the chars. List of lists of chars
@@ -154,14 +159,29 @@ module State =
             let word = String.concat "" (List.map string combo)
             if lookup word dictionary then Some word else None)
     
-    let FindListOfWordsInDictionary2 dictionary chars c =
-        generateCombinations (chars@[c])
-        |> List.choose (fun combo -> 
-            let word = String.concat "" (List.map string combo)
-            if lookup word dictionary && List.head combo = c then Some word else None)
-        
+    let findListOfWordsInDictionaryFromBoard dictionary (strings: string list)  =
+        strings|> List.choose (fun combo -> if lookup combo dictionary then Some combo else None)
+
+    let addCharToFront (charToAdd: char) (lists: char list list) =
+        List.map (fun sublist -> charToAdd :: sublist) lists
     
-    //cords to list of chars on an empty board. Not checking for center of board though.
+    let makeStringFromList (chars: char list) =
+        String.concat "" (List.map string chars)
+
+    let findAllPermutationsFromHandAndBoard (charsInHand: char list) (charsOnboard: char list) =
+            //creates list of a list of all unique combinations of the characters in hand such that ['a'; 'b'; ] -> ['a'; 'b']; ['a']; ['b']; [];
+            let allCombination = generateCombinations charsInHand
+           
+            // //puts all the combinations in a list of all possible combinations of the characters in hand such that ['a'; 'b'; ] -> ['a'; 'b']; ['b'; 'a'] ['a']; ['b']; [];
+            let allPermutations = generateAllStringsFromList charsInHand
+            
+            //adds the first character to the front of all the combinations such that 'x' ['a'; 'b'; ] -> ['x'; 'a'; 'b']; ['x'; 'b'; 'a'] ['x'; 'a']; ['x'; 'b']; ['x'
+            List.fold (fun acc charFromBoard ->
+                let allwordWithFirstChar = addCharToFront charFromBoard allPermutations
+                acc @ allwordWithFirstChar
+            ) [] charsOnboard
+  
+   
     let makeListOfCharsFromString (s : string) =
         s |> Seq.toList
     
@@ -183,10 +203,8 @@ module State =
     let mapToListOfChars (map: Map<coord, (uint32 * (char*int))>) : char list =
         Map.fold (fun acc _  (_,(char, _)) -> char :: acc) [] map
 
-    let getFirstElement lst =
-        match lst with
-        | [] -> failwith "Empty list"
-        | _ -> List.head
+    
+
 
     
         
@@ -236,9 +254,24 @@ module Scrabble =
             //debugPrint (sprintf "Move: %A\n" move)
 
             
+            // let inputChars = ['A'; 'B'; 'C']
+            // let firstChar = ['X'; 'Y'; 'Z';]
+            // let input2 = [['A']; ['B']; ['B'; 'C']; ['A'; 'C']; ['A'; 'B']; ['A'; 'B'; 'C']]
 
-  
+            // let allCombination = State.generateCombinations inputChars
+            //let allPermutations = State.generateAllStringsFromList inputChars
+         
+        
+            let boardWords = State.findAllPermutationsFromHandAndBoard characters (State.mapToListOfChars st.occupiedSquares)
+            let combsToString = List.map (fun x -> State.makeStringFromList x) boardWords
+            let combsOfDicWords = State.findListOfWordsInDictionaryFromBoard st.dict combsToString
+            debugPrint(sprintf "longestWordFromCombs: %A\n" combsOfDicWords)
+            debugPrint(sprintf "longestWordFromCombs: %A\n" combsOfDicWords.Length)
+            //let longestWordFromCombs = combsOfDicWords |> List.maxBy (fun x -> x.Length)
+            //debugPrint(sprintf "longestWordFromCombs: %A\" longestWordFromCombs)
 
+            
+            
 
             forcePrint (sprintf "fandt et ord: %A \n" foundWords) 
             //debugPrint (sprintf "print print en liste pls %A", characters)
@@ -254,10 +287,6 @@ module Scrabble =
                     let boardChars = State.mapToListOfChars st.occupiedSquares
                     debugPrint (sprintf "Board chars: %A\n" boardChars)
 
-                    let allPossibleWords = State.FindListOfWordsInDictionary2 st.dict (boardChars@characters) 'A'
-                    debugPrint( sprintf "All possible words: %A\n" allPossibleWords)
-                    let findWordFromBoard = State.FindListOfWordsInDictionary2 st.dict characters 'A'
-                    debugPrint (sprintf "Find word from board: %A\n" findWordFromBoard)
 
                     send cstream (SMPass)
                
