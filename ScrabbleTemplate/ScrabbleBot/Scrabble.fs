@@ -201,7 +201,7 @@ module State =
     let makeCordsVertical (list: (uint32 * (char * int)) list) (center: coord) =
         let firstCoordX = fst center in
         let firstCoordY = snd center in
-        List.mapi (fun i (id, (char, point)) -> (coord(firstCoordX, firstCoordY - i), (id, (char, point)))) list 
+        List.mapi (fun i (id, (char, point)) -> (coord(firstCoordX, firstCoordY + i), (id, (char, point)))) list 
     
     let mapToListOfChars (map: Map<coord, (uint32 * (char*int))>) : char list =
         Map.fold (fun acc _  (_,(char, _)) -> char :: acc) [] map
@@ -229,28 +229,56 @@ module State =
                 let formatTotuple = SetToList idToPoints
                 if direction = "vertical" then
                     let move = makeCordsVertical formatTotuple coord
-                    acc @ move
+                    acc @ [move]
                 else
                     let move = makeCordsToWordHorizontal formatTotuple coord
-                    acc @ move
+                    acc @ [move]
             ) acc words
         ) [] map
 
-    // let validateWordsOnBoard (map: (coord * (uint32 * (char * int))) list) (occupiedSquares: Map<coord, (uint32 * (char*int))>) =
-    //     List.fold (fun acc (coord, (id, (char, point))) ->
-    //         let firstCoordX = fst coord in
-    //         let firstCoordY = snd coord in
-    //         let (above:coord) = (firstCoordX, firstCoordY + 1)
-    //         let (below: coord) = (firstCoordX, firstCoordY - 1)
-    //         let (left: coord) = (firstCoordX - 1, firstCoordY)
-    //         let (right: coord) = (firstCoordX + 1, firstCoordY)
+        // let firstCoordX = fst coord in
+        //         let firstCoordY = snd coord in
+        //         let (above:coord) = (firstCoordX, firstCoordY + 1)
+        //         let (below: coord) = (firstCoordX, firstCoordY - 1)
+        //         let (left: coord) = (firstCoordX - 1, firstCoordY)
+        //         let (right: coord) = (firstCoordX + 1, firstCoordY)
 
-    //         match Map.tryFind coord occupiedSquares with
-    //         | Some(existing) -> acc
-    //         | None -> acc @ [(coord, (id, (char, point)))]
-    //     ) [] map
-    
-        // 
+    let rec validateRestOfWordVertical (word: (coord * (uint32 * (char * int))) list) (occupiedSquares: Map<coord, (uint32 * (char*int))>) =
+        match word with
+        | [] -> true // Base case: All squares in the word are valid
+        | (coord, _) :: rest ->
+            let leftCoord = (fst coord - 1, snd coord)
+            let rightCoord = (fst coord + 1, snd coord)
+            let belowCoord = (fst coord, snd coord + 1)
+            match Map.tryFind coord occupiedSquares with
+            | Some(_) -> false // The current square is occupied
+            | None ->
+                match (Map.tryFind leftCoord occupiedSquares, Map.tryFind rightCoord occupiedSquares, Map.tryFind belowCoord occupiedSquares) with
+                | (Some(_), _, _) -> false // The square to the left is occupied
+                | (_, Some(_), _) -> false // The square to the right is occupied
+                | (_, _, Some(_)) -> false // The square below is occupied
+                | _ -> validateRestOfWordVertical rest occupiedSquares // Recur with the rest of the word list
+        
+    let validateWordVertical (word: (coord * (uint32 * (char * int))) list) (occupiedSquares: Map<coord, (uint32 * (char*int))>) =
+       match word with
+        | [] -> true // Base case: All squares in the word are valid
+        | (currentCoord, _) :: _ ->
+            let aboveCoord = (fst currentCoord, snd currentCoord - 1)
+            match Map.tryFind aboveCoord occupiedSquares with
+            | Some(_) -> false // The square above is occupied
+            | None -> validateRestOfWordVertical (List.tail word) occupiedSquares // Recur with the tail of the word list
+
+
+    let validateWordsOnBoardVertical (words: (coord * (uint32 * (char * int))) list list) (occupiedSquares: Map<coord, (uint32 * (char*int))>) =
+        List.fold (fun acc word ->
+            let validateWord = validateWordVertical word occupiedSquares
+            if validateWord then acc @ [word]
+            else acc
+        ) [] words
+
+    let removeFirstLetterFromWords (words: (coord * (uint32 * (char * int))) list list) =
+        List.map (fun word -> List.tail word) words
+
 module Scrabble =
     open System.Threading
 
@@ -293,27 +321,27 @@ module Scrabble =
             //debugPrint (sprintf "Format to tuple: %A\n" formatTotuple)
 
             //create coords for first move
-            let move = State.makeCordsVertical formatTotuple st.board.center
+            
             //debugPrint (sprintf "Move: %A\n" move)
 
-            let board = Map[(coord(-6, 2), (3u, ('C', 3))); (coord(-6, 3), (21u, ('U', 1)));
-                (coord(-6, 4), (12u, ('L', 1))); (coord(-6, 5), (20u, ('T', 1)));
-                (coord(-6, 6), (9u, ('I', 1)));]
+            // let board = Map[(coord(-6, 2), (3u, ('C', 3))); (coord(-6, 3), (21u, ('U', 1)));
+            //     (coord(-6, 4), (12u, ('L', 1))); (coord(-6, 5), (20u, ('T', 1)));
+            //     (coord(-6, 6), (9u, ('I', 1)));]
 
-            let hand = ['A'; 'B'; 'C']
+            // let hand = ['A'; 'B'; 'C']
 
             //
-            let mapOfCordsToWords = State.getWordFromBoard board hand st.dict      
-            debugPrint (sprintf "Map to valid: %A\n" mapOfCordsToWords)
+            // let mapOfCordsToWords = State.getWordFromBoard board hand st.dict      
+            // //debugPrint (sprintf "Map to valid: %A\n" mapOfCordsToWords)
 
-            let makeCordsForWordsHorizontal = State.makeCordsToWordsHorizonatal mapOfCordsToWords pieces "horizontal"
-            debugPrint (sprintf "Make cords for words horizontal: %A\n" makeCordsForWordsHorizontal)
+            // let makeCordsForWordsHorizontal = State.makeCordsToWordsHorizonatal mapOfCordsToWords pieces "horizontal"
+            // //debugPrint (sprintf "Make cords for words horizontal: %A\n" makeCordsForWordsHorizontal)
 
-            let makeCordsForWordsVertical = State.makeCordsToWordsHorizonatal mapOfCordsToWords pieces "vertical"
-            debugPrint (sprintf "Make cords for words vertical: %A\n" makeCordsForWordsVertical)
+            // let makeCordsForWordsVertical = State.makeCordsToWordsHorizonatal mapOfCordsToWords pieces "vertical"
+            // debugPrint (sprintf "Make cords for words vertical: %A\n" makeCordsForWordsVertical)
 
-            // let validateWords = State.validateWordsOnBoard makeCordsForWordsHorizontal st.occupiedSquares
-            
+            // let validateWords = State.validateWordsOnBoardVertical makeCordsForWordsVertical st.occupiedSquares
+            // debugPrint (sprintf "Validate words: %A\n" validateWords)
 
 
             // let allCombination = State.generateCombinations inputChars
@@ -332,35 +360,47 @@ module Scrabble =
             
 
 
-            forcePrint (sprintf "fandt et ord: %A \n" foundWords) 
+            //forcePrint (sprintf "fandt et ord: %A \n" foundWords) 
             //debugPrint (sprintf "print print en liste pls %A", characters)
             // remove the force print when you move on from manual input (or when you have learnt the format)
             //forcePrint "Input move (format '(<x-coordinate> <y-coordinate> <piece id><character><point-value> )*', note the absence of space between the last inputs)\n\n"
             if isYourTurn then 
                 if st.occupiedSquares.IsEmpty then
                     if foundWords.Length > 0 then
+                        let move = State.makeCordsVertical formatTotuple st.board.center
                         send cstream (SMPlay move)
                     else
                     send cstream (SMChange (toList st.hand))
                 else
-                    //let boardChars = State.mapToListOfChars st.occupiedSquares
-                    debugPrint (sprintf "Board chars: %A\n" st.occupiedSquares)
-                    // let boardWords = State.findAllPermutationsFromHandAndBoard characters (State.mapToListOfChars st.occupiedSquares)
-                    // let combsToString = List.map (fun x -> State.makeStringFromList x) boardWords
+                    let hand = State.handToCharacters pieces (st.hand)
+                   
+                    let mapOfCordsToWords = State.getWordFromBoard st.occupiedSquares hand st.dict      
+                    //debugPrint (sprintf "Map to valid: %A\n" mapOfCordsToWords)
+
+                    // let makeCordsForWordsHorizontal = State.makeCordsToWordsHorizonatal mapOfCordsToWords pieces "horizontal"
+                    // //debugPrint (sprintf "Make cords for words horizontal: %A\n" makeCordsForWordsHorizontal)
+
+                    let makeCordsForWordsVertical = State.makeCordsToWordsHorizonatal mapOfCordsToWords pieces "vertical"
+                    debugPrint (sprintf "Make cords for words vertical: %A\n" makeCordsForWordsVertical)
+                    //let firstwor = List.head makeCordsForWordsVertical
+                    //debugPrint (sprintf "First word: %A\n" firstwor)
+
+                    let validateWords = State.validateWordsOnBoardVertical makeCordsForWordsVertical st.occupiedSquares
+                    debugPrint (sprintf "Validate words: %A\n" validateWords)
+
+                    let wordWithFirstLetter = List.head validateWords
+                    debugPrint (sprintf "Word with first letter: %A\n" wordWithFirstLetter)
+
+                    let removeLetterFromBoardInWords = State.removeFirstLetterFromWords validateWords
+
+                    if removeLetterFromBoardInWords.Length > 0 then
+                        let move2 = List.head removeLetterFromBoardInWords
+                        debugPrint (sprintf "Move: %A\n" move2)
+                        send cstream (SMPlay move2)
+                    else
+                        send cstream (SMChange (toList st.hand))
                     
-                    // //list of words from board as strings 
-                    // let combsOfDicWords = State.findListOfWordsInDictionaryFromBoard st.dict combsToString
-                    
-                    //only takes the first 3 words for testing 
-                    //let test3words = List.tryPick 3 combsOfDicWords
-                    //convert to char
-                    //let test3wordsAsChars = List.map (fun x -> State.makeListOfCharsFromString x) test3words
-
-                    //debugPrint (sprintf "Test 3 words as chars: %A\n" test3wordsAsChars)
-                    // debugPrint (sprintf "Test 3 words: %A\n" st.occupiedSquares)
-
-
-                    send cstream (SMPass)
+                    // send cstream (SMPass)
                
 
                 //send cstream (SMPass)
