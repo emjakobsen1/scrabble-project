@@ -170,11 +170,11 @@ module State =
 
     let findAllPermutationsFromHandAndBoard (charsInHand: char list) (charsOnboard: char list) =
             //creates list of a list of all unique combinations of the characters in hand such that ['a'; 'b'; ] -> ['a'; 'b']; ['a']; ['b']; [];
-            let allCombination = generateCombinations charsInHand
+            //let allCombination = generateCombinations charsInHand
            
             // //puts all the combinations in a list of all possible combinations of the characters in hand such that ['a'; 'b'; ] -> ['a'; 'b']; ['b'; 'a'] ['a']; ['b']; [];
             let allPermutations = generateAllStringsFromList charsInHand
-            
+            //let allPermutations =
             //adds the first character to the front of all the combinations such that 'x' ['a'; 'b'; ] -> ['x'; 'a'; 'b']; ['x'; 'b'; 'a'] ['x'; 'a']; ['x'; 'b']; ['x'
             List.fold (fun acc charFromBoard ->
                 let allwordWithFirstChar = addCharToFront charFromBoard allPermutations
@@ -193,21 +193,64 @@ module State =
     let SetToList (map: (uint32 * Set<'c * 'd>) list) =
         map |> List.collect (fun (x, s) -> Set.toList s |> List.map (fun (c, d) -> (x, (c, d))))
 
-    let makeFirstMoveFromList (list: (uint32 * (char * int)) list) (center: coord) =
+    let makeCordsToWordHorizontal (list: (uint32 * (char * int)) list) (center: coord) =
         let firstCoordX = fst center in
         let firstCoordY = snd center in
-
-        
         List.mapi (fun i (id, (char, point)) -> (coord(firstCoordX + i, firstCoordY), (id, (char, point)))) list 
+    
+    let makeCordsVertical (list: (uint32 * (char * int)) list) (center: coord) =
+        let firstCoordX = fst center in
+        let firstCoordY = snd center in
+        List.mapi (fun i (id, (char, point)) -> (coord(firstCoordX, firstCoordY - i), (id, (char, point)))) list 
     
     let mapToListOfChars (map: Map<coord, (uint32 * (char*int))>) : char list =
         Map.fold (fun acc _  (_,(char, _)) -> char :: acc) [] map
 
-    
+    let addToMap (coord, value) acc =
+            Map.add coord value acc
 
+    //makes all possible words from hand and board at cords
+    let getWordFromBoard (map: Map<coord, (uint32 * (char * int))>) (hand: char list) (dict: Dict) =
+        Map.fold (fun acc coord (_, (char, _)) ->
+            let combinationWithHand = findAllPermutationsFromHandAndBoard hand [char]
+            let combsToString = List.map (fun x -> makeStringFromList x) combinationWithHand
+            let checkCombsInDic = findListOfWordsInDictionaryFromBoard dict combsToString
+            match Map.tryFind coord acc with
+            | Some(existingWords) -> Map.add coord (checkCombsInDic @ existingWords) acc
+            | None -> Map.add coord checkCombsInDic acc
+        ) Map.empty map
 
+    let makeCordsToWordsHorizonatal (map: Map<coord, string list>) pieces (direction: string) =
+        Map.fold (fun acc coord words ->
+            List.fold(fun acc word ->
+                let wordAsChars = makeListOfCharsFromString word
+                let findIdToChar =  List.map (fun x -> charToUint x) wordAsChars 
+                let idToPoints = List.map (fun x -> (x, Map.find x pieces)) findIdToChar
+                let formatTotuple = SetToList idToPoints
+                if direction = "vertical" then
+                    let move = makeCordsVertical formatTotuple coord
+                    acc @ move
+                else
+                    let move = makeCordsToWordHorizontal formatTotuple coord
+                    acc @ move
+            ) acc words
+        ) [] map
+
+    // let validateWordsOnBoard (map: (coord * (uint32 * (char * int))) list) (occupiedSquares: Map<coord, (uint32 * (char*int))>) =
+    //     List.fold (fun acc (coord, (id, (char, point))) ->
+    //         let firstCoordX = fst coord in
+    //         let firstCoordY = snd coord in
+    //         let (above:coord) = (firstCoordX, firstCoordY + 1)
+    //         let (below: coord) = (firstCoordX, firstCoordY - 1)
+    //         let (left: coord) = (firstCoordX - 1, firstCoordY)
+    //         let (right: coord) = (firstCoordX + 1, firstCoordY)
+
+    //         match Map.tryFind coord occupiedSquares with
+    //         | Some(existing) -> acc
+    //         | None -> acc @ [(coord, (id, (char, point)))]
+    //     ) [] map
     
-        
+        // 
 module Scrabble =
     open System.Threading
 
@@ -250,28 +293,44 @@ module Scrabble =
             //debugPrint (sprintf "Format to tuple: %A\n" formatTotuple)
 
             //create coords for first move
-            let move = State.makeFirstMoveFromList formatTotuple st.board.center
+            let move = State.makeCordsVertical formatTotuple st.board.center
             //debugPrint (sprintf "Move: %A\n" move)
 
+            let board = Map[(coord(-6, 2), (3u, ('C', 3))); (coord(-6, 3), (21u, ('U', 1)));
+                (coord(-6, 4), (12u, ('L', 1))); (coord(-6, 5), (20u, ('T', 1)));
+                (coord(-6, 6), (9u, ('I', 1)));]
+
+            let hand = ['A'; 'B'; 'C']
+
+            //
+            let mapOfCordsToWords = State.getWordFromBoard board hand st.dict      
+            debugPrint (sprintf "Map to valid: %A\n" mapOfCordsToWords)
+
+            let makeCordsForWordsHorizontal = State.makeCordsToWordsHorizonatal mapOfCordsToWords pieces "horizontal"
+            debugPrint (sprintf "Make cords for words horizontal: %A\n" makeCordsForWordsHorizontal)
+
+            let makeCordsForWordsVertical = State.makeCordsToWordsHorizonatal mapOfCordsToWords pieces "vertical"
+            debugPrint (sprintf "Make cords for words vertical: %A\n" makeCordsForWordsVertical)
+
+            // let validateWords = State.validateWordsOnBoard makeCordsForWordsHorizontal st.occupiedSquares
             
-            // let inputChars = ['A'; 'B'; 'C']
-            // let firstChar = ['X'; 'Y'; 'Z';]
-            // let input2 = [['A']; ['B']; ['B'; 'C']; ['A'; 'C']; ['A'; 'B']; ['A'; 'B'; 'C']]
+
 
             // let allCombination = State.generateCombinations inputChars
-            //let allPermutations = State.generateAllStringsFromList inputChars
-         
-        
-            let boardWords = State.findAllPermutationsFromHandAndBoard characters (State.mapToListOfChars st.occupiedSquares)
-            let combsToString = List.map (fun x -> State.makeStringFromList x) boardWords
-            let combsOfDicWords = State.findListOfWordsInDictionaryFromBoard st.dict combsToString
-            debugPrint(sprintf "longestWordFromCombs: %A\n" combsOfDicWords)
-            debugPrint(sprintf "longestWordFromCombs: %A\n" combsOfDicWords.Length)
+            // let allPermutations = State.generateAllStringsFromList inputChars
+
+            //let boardWords = State.findAllPermutationsFromHandAndBoard inputChars firstChar
+            //debugPrint (sprintf "Board words: %A\n" boardWords)
+            
+            //let combsToString = List.map (fun x -> State.makeStringFromList x) boardWords
+            //let checkCombsInDic = State.findListOfWordsInDictionaryFromBoard st.dict combsToString
+            //debugPrint (sprintf "Check combs in dic: %A\n" checkCombsInDic)
             //let longestWordFromCombs = combsOfDicWords |> List.maxBy (fun x -> x.Length)
             //debugPrint(sprintf "longestWordFromCombs: %A\" longestWordFromCombs)
 
+            //let dicWordsTochar = List.map (fun word-> State.makeListOfCharsFromString word) checkCombsInDic
             
-            
+
 
             forcePrint (sprintf "fandt et ord: %A \n" foundWords) 
             //debugPrint (sprintf "print print en liste pls %A", characters)
@@ -284,8 +343,21 @@ module Scrabble =
                     else
                     send cstream (SMChange (toList st.hand))
                 else
-                    let boardChars = State.mapToListOfChars st.occupiedSquares
-                    debugPrint (sprintf "Board chars: %A\n" boardChars)
+                    //let boardChars = State.mapToListOfChars st.occupiedSquares
+                    debugPrint (sprintf "Board chars: %A\n" st.occupiedSquares)
+                    // let boardWords = State.findAllPermutationsFromHandAndBoard characters (State.mapToListOfChars st.occupiedSquares)
+                    // let combsToString = List.map (fun x -> State.makeStringFromList x) boardWords
+                    
+                    // //list of words from board as strings 
+                    // let combsOfDicWords = State.findListOfWordsInDictionaryFromBoard st.dict combsToString
+                    
+                    //only takes the first 3 words for testing 
+                    //let test3words = List.tryPick 3 combsOfDicWords
+                    //convert to char
+                    //let test3wordsAsChars = List.map (fun x -> State.makeListOfCharsFromString x) test3words
+
+                    //debugPrint (sprintf "Test 3 words as chars: %A\n" test3wordsAsChars)
+                    // debugPrint (sprintf "Test 3 words: %A\n" st.occupiedSquares)
 
 
                     send cstream (SMPass)
