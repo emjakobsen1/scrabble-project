@@ -32,6 +32,7 @@ module RegEx =
         Seq.toList
 
  module Print =
+    
 
     let printHand pieces hand =
         hand |>
@@ -59,10 +60,11 @@ module State =
         playerNumber  : uint32
         hand          : MultiSet.MultiSet<uint32>
         playerTurn   : uint32
+        numPlayers    : uint32
         occupiedSquares : Map<coord, (uint32 * (char*int))> //mapping a coordinate to a tuple of (id * tile)
     }
 
-    let mkState b d pn h t = {board = b; dict = d;  playerNumber = pn; hand = h; playerTurn = t; 
+    let mkState b d pn h t np = {board = b; dict = d;  playerNumber = pn; hand = h; playerTurn = t; numPlayers = np; 
                 occupiedSquares = Map.empty<coord, uint32 * (char*int)>}
 
     let board st         = st.board
@@ -177,19 +179,21 @@ module State =
                 for perm in generatePermutations (List.filter ((<>) x) lst) do
                     yield x :: perm ]
     let findAllPermutationsFromHandAndBoard (charsInHand: char list) (char: char) =
-            debugPrint(sprintf "SLOW 1")
-            debugPrint(sprintf "Char: %c" char)
-            debugPrint(sprintf "CharsInHand: %A" charsInHand)
             let combination = generateCombinations charsInHand
-            debugPrint(sprintf "SLOW 2")
             let allPermutations = List.collect (fun x -> generatePermutations x) combination
-            debugPrint(sprintf "SLOW 3")
 
             List.map (fun list -> char :: list) allPermutations
-            // List.fold (fun acc x -> 
-            //     let word = char :: x
-            //     acc @ [word]
-            // ) [] allPermutations 
+
+    let findAllWordsFromHand (charsInHand: char list) (dict: Dict)=
+            let combination = generateCombinations charsInHand
+            let allPermutations = List.collect (fun x -> generatePermutations x) combination
+
+            let combsToString = List.map (fun x -> makeStringFromList x) allPermutations
+            debugPrint(sprintf "combsToString %A" combsToString)
+
+            let checkCombsInDic = findListOfWordsInDictionaryFromBoard dict combsToString   
+            debugPrint(sprintf "checkCombsInDic %A" checkCombsInDic)    
+            checkCombsInDic
             
   
    
@@ -222,13 +226,13 @@ module State =
     //makes all possible words from hand and board at cords
     let getWordFromBoard (map: Map<coord, (uint32 * (char * int))>) (hand: char list) (dict: Dict) =
         Map.fold (fun acc coord (_, (char, _)) ->
-            debugPrint(sprintf "here 1")
+            // debugPrint(sprintf "here 1")
             let combinationWithHand = findAllPermutationsFromHandAndBoard hand char
-            debugPrint(sprintf "here 2")
+            // debugPrint(sprintf "here 2")
             let combsToString = List.map (fun x -> makeStringFromList x) combinationWithHand
-            debugPrint(sprintf "here 3")
+            // debugPrint(sprintf "here 3")
             let checkCombsInDic = findListOfWordsInDictionaryFromBoard dict combsToString
-            debugPrint(sprintf "here 4")
+            // debugPrint(sprintf "here 4")
             match Map.tryFind coord acc with
             | Some(existingWords) -> Map.add coord (checkCombsInDic @ existingWords) acc
             | None -> Map.add coord checkCombsInDic acc
@@ -328,26 +332,29 @@ module Scrabble =
 
     let playGame cstream pieces (st : State.state) =
         let rec aux (st : State.state) =
-            debugPrint(sprintf "good 1")
+            // debugPrint(sprintf "good 1")
             let isYourTurn = (State.playerTurn st) = (State.playerNumber st)
+            let numberOfPlayers = st.numPlayers
+   
+
             
-            if isYourTurn then 
+            if isYourTurn || numberOfPlayers = 1u then 
                 if st.occupiedSquares.IsEmpty then
-                    debugPrint(sprintf "good 2")
+                    // debugPrint(sprintf "good 2")
                     let characters = State.handToCharacters2 pieces (st.hand)
-                    debugPrint(sprintf "good 3")
-                    let foundWords = State.FindListOfWordsInDictionary st.dict characters
-                    debugPrint(sprintf "good 3")
+                    // debugPrint(sprintf "good 3")
+                    let foundWords = State.findAllWordsFromHand characters st.dict
+                    // debugPrint(sprintf "good 3")
                     let longestWord = foundWords |> List.maxBy (fun x -> x.Length)
-                    debugPrint(sprintf "good 4")
+                    // debugPrint(sprintf "good 4")
                     let longestWordAsChars = State.makeListOfCharsFromString longestWord
-                    debugPrint(sprintf "good 5")
+                    // debugPrint(sprintf "good 5")
                     let findIdToChar =  List.map (fun x -> State.charToUint x) longestWordAsChars
-                    debugPrint(sprintf "good 6")
+                    // debugPrint(sprintf "good 6")
                     let idToPoints = List.map (fun x -> (x, Map.find x pieces)) findIdToChar
-                    debugPrint(sprintf "good 7")
+                    // debugPrint(sprintf "good 7")
                     let formatTotuple = State.SetToList idToPoints
-                    debugPrint(sprintf "good 8")
+                    // debugPrint(sprintf "good 8")
                     if foundWords.Length > 0 then
                         let move = State.makeCordsVertical formatTotuple st.board.center
                         send cstream (SMPlay move)
@@ -355,46 +362,46 @@ module Scrabble =
                         send cstream (SMChange (toList st.hand))
                 else
                     let hand = State.handToCharacters2 pieces (st.hand)
-                    debugPrint (sprintf "So far So goood 1")
+                    // debugPrint (sprintf "So far So goood 1")
                     let mapOfCordsToWords = State.getWordFromBoard st.occupiedSquares hand st.dict      
-                    debugPrint (sprintf "So far So goood 2")
+                    // debugPrint (sprintf "So far So goood 2")
                     let makeCordsForWordsVertical = State.makeCordsToWords mapOfCordsToWords pieces "vertical"
-                    debugPrint (sprintf "So far So goood 3")
+                    // debugPrint (sprintf "So far So goood 3")
                     let validateWordsVertical = State.validateWordsOnBoardVertical makeCordsForWordsVertical st.occupiedSquares
-                    debugPrint (sprintf "So far So goood 4")
+                    // debugPrint (sprintf "So far So goood 4")
                     if(validateWordsVertical.Length = 0) then
-                        debugPrint (sprintf "So far So goood 5")
+                        // debugPrint (sprintf "So far So goood 5")
                         let makeCordsForWordsHorizontal = State.makeCordsToWords mapOfCordsToWords pieces "horizontal"
-                        debugPrint (sprintf "So far So goood 6")
+                        // debugPrint (sprintf "So far So goood 6")
                         let validateWordsHorizontal = State.validateWordsOnBoardHorizontal makeCordsForWordsHorizontal st.occupiedSquares
-                        debugPrint (sprintf "So far So goood 7")
+                        // debugPrint (sprintf "So far So goood 7")
                         if (validateWordsHorizontal.Length = 0) then
-                            debugPrint (sprintf "So far So goood 8")
+                            // debugPrint (sprintf "So far So goood 8")
                             send cstream (SMPass)
                         else
-                            debugPrint (sprintf "So far So goood 9")
+                            // debugPrint (sprintf "So far So goood 9")
                             let removeLetterFromBoardInWords = State.removeFirstLetterFromWords validateWordsHorizontal
-                            debugPrint (sprintf "So far So goood 10")
+                            // debugPrint (sprintf "So far So goood 10")
                             let move3 = State.longestFoundWord removeLetterFromBoardInWords
-                            debugPrint (sprintf "So far So goood 11")
+                            // debugPrint (sprintf "So far So goood 11")
                             send cstream (SMPlay move3)
                     else   
-                        debugPrint (sprintf "So far So goood 12")
+                        // debugPrint (sprintf "So far So goood 12")
                         let removeLetterFromBoardInWords = State.removeFirstLetterFromWords validateWordsVertical
-                        debugPrint (sprintf "So far So goood 13")
+                        // debugPrint (sprintf "So far So goood 13")
                         if removeLetterFromBoardInWords.Length > 0 then
-                            debugPrint (sprintf "So far So goood 14")
+                            // debugPrint (sprintf "So far So goood 14")
                             let move2 = State.longestFoundWord removeLetterFromBoardInWords
-                            debugPrint (sprintf "So far So goood 15")
+                            // debugPrint (sprintf "So far So goood 15")
                             send cstream (SMPlay move2)
                         else
-                            debugPrint (sprintf "So far So goood 16")
+                            // debugPrint (sprintf "So far So goood 16")
                             send cstream (SMChange (toList st.hand))
             
 
-            debugPrint (sprintf "So far So goood 17")
+            // debugPrint (sprintf "So far So goood 17")
             let msg = recv cstream
-            debugPrint (sprintf "So far So goood 18")
+            // debugPrint (sprintf "So far So goood 18")
 
             match msg with
             | RCM (CMPlaySuccess(ms, points, newPieces)) ->
@@ -463,5 +470,5 @@ module Scrabble =
                   
         let handSet = List.fold (fun acc (x, k) -> MultiSet.add x k acc) MultiSet.empty hand
 
-        fun () -> playGame cstream tiles (State.mkState board dict playerNumber handSet playerTurn)
+        fun () -> playGame cstream tiles (State.mkState board dict playerNumber handSet playerTurn numPlayers)
         
