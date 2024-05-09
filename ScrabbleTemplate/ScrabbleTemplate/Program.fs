@@ -109,7 +109,10 @@ let main argv =
     let (dictionary, time) =
         time (fun () -> ScrabbleUtil.Dictionary.mkDict words dictAPI)
     //let players =[("FSharpScrabble", dictionary, FSharpScrabble.Scrabble.startGame);("OxyphenButazone", dictionary, Oxyphenbutazone.Scrabble.startGame)]
-    let players =[("FSharpScrabble", dictionary, FSharpScrabble.Scrabble.startGame);("f2", dictionary, FSharpScrabble.Scrabble.startGame)]
+    //let players =[("FSharpScrabble", dictionary, FSharpScrabble.Scrabble.startGame);("f2", dictionary, FSharpScrabble.Scrabble.startGame)]
+    
+    //playing against itself like a loser and not just clonening itself
+    let players = [("FSharpScrabble", dictionary, FSharpScrabble.Scrabble.startGame);]
     //let players = spawnMultiples "OxyphenButazone" dictionary Oxyphenbutazone.Scrabble.startGame 2
 
 
