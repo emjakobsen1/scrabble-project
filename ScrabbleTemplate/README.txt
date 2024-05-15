@@ -1,5 +1,5 @@
-Multi-player (yes)
+Multi-player (yes, up to 2 players)
 Dictionary (yes)
-playing on all boards (can play some moves, and fail other moves, so sorta)
+playing on all boards (no)
 parallelism (no)
 Respect the timeout flag (no)
